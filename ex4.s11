@@ -15,7 +15,14 @@ LEN8 = 25		;length of word "seconds per move"
 LEN9 = 23		;length of word "Board layout:"
 LEN10 = 120 	;length of board
 LEN_ERROR=21
+<<<<<<< HEAD
 ;taltaltaltaltaltal
+=======
+<<<<<<< HEAD
+=======
+taltaltaltaltaltal
+>>>>>>> 3aea3f6ba97f343c25f208e2e820871e44d7596b
+>>>>>>> 6aa24feef643e6e4d24f9b4aecc6dd54e9205169
 
 . = torg + 1000 
 
@@ -291,7 +298,7 @@ endtime4:	mov r1,dest
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
-
+;chenHavkuk hiita pooooooo kokookololookoklo
 start:				
 			mov #100, @#tps
 			mov #startmsg, -(sp)
