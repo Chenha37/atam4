@@ -1,0 +1,727 @@
+tks = 177560 ;which line in code?????????????????????????
+tkb = 177562
+tps = 177564
+tpb = 177566
+cls = 177546
+NIL = 0
+LEN1 = 50		;length of Welcome message
+LEN2 = 5		;length of dollar
+LEN3 = 31 		;length of starting message
+LEN4 = 6 		;length of "white"/"black"/"Human"
+LEN5 = 12		;length of word "player is "
+LEN6 = 11		;length of word "Computer"
+LEN7 = 5		;length of word "with "
+LEN8 = 25		;length of word "seconds per move"
+LEN9 = 23		;length of word "Board layout:"
+LEN10 = 120 	;length of board
+LEN_ERROR=21
+
+. = torg + 1000 
+
+;---------------------------------------------------------------------------------------------
+;|                                          main                                             |
+;---------------------------------------------------------------------------------------------
+
+main: 		mov #main, sp
+			mov #printc, @#20
+			mov #340, @#22
+			mov #printc, @#64
+			mov #200, @#66
+			mov #100, @#tps
+			mov #inp, @#60 			;keyboard Interrupt vector initialization
+			mov #200, @#62
+			mov #opnmsg, -(sp)
+			mov #LEN1, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length   
+			mov #clock, @#100
+			mov #300, @#102
+			bis #101,@#tks			;change IE,RE to 1
+			
+			
+prdollar:  	mov #dollar, -(sp)
+			mov #LEN2, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			bis #101,@#tks					
+waiting:	wait
+			br waiting				;wait to interrupt
+			jmp checkinp
+			
+			
+;---------------------------------------------------------------------------------------------
+;|                                 checking if the input is legal                            |
+;---------------------------------------------------------------------------------------------	
+checkinp:
+			mov #array,-(sp)
+			cmp #'s,@(sp)
+			bne check2
+			add #2,(sp)
+			cmp #'t,@(sp)
+			bne check2
+			add #2,(sp)
+			cmp #'a,@(sp)
+			bne check2
+			add #2,(sp)
+			cmp #'r,@(sp)
+			bne check2
+			add #2,(sp)
+			cmp #'t,@(sp)
+			bne check2
+			add #2,(sp)
+			cmp #' ,@(sp)
+			bne error
+			cmp startgm,0
+			bne error
+			br chkstart			
+check2:     tst (sp)+
+		    mov #array,-(sp)
+			cmp #'m,@(sp)
+			bne check3
+			add #2,(sp)
+			cmp #'o,@(sp)
+			bne check3
+			add #2,(sp)
+			cmp #'v,@(sp)
+			bne check3
+			add #2,(sp)
+			cmp #'e,@(sp)
+			bne check3
+			add #2,(sp)
+			cmp #' ,@(sp)
+			bne error
+			cmp #1,startgm
+			bne error
+			jmp chkmove						
+check3:		tst (sp)+
+		    mov #array,-(sp)
+			cmp #'s,@(sp)
+			bne check4
+			add #2,(sp)
+			cmp #'t,@(sp)
+			bne check4
+			add #2,(sp)
+			cmp #'o,@(sp)
+			bne check4
+			add #2,(sp)
+			cmp #'p,@(sp)
+			bne check4
+			tst (sp)+
+			jmp stop
+			check4:		tst (sp)+
+		    mov #array,-(sp)
+			cmp #'t,@(sp)
+			bne error
+			add #2,(sp)
+			cmp #'i,@(sp)
+			bne error
+			add #2,(sp)
+			cmp #'m,@(sp)
+			bne error
+			add #2,(sp)
+			cmp #'e,@(sp)
+			bne error
+			tst (sp)+
+			jmp time	
+error:		tst (sp)+
+			mov #errormsg,-(sp)
+			mov #LEN_ERROR,-(sp)
+			jsr pc, printMsg
+			add #4,sp
+			mov #array,-(sp)
+			mov LENARRAY,-(sp)
+			jsr pc, printMsg
+			add #4,sp
+			bis #1, @#tks
+			jmp prdollar	
+chkstart:   add #2,(sp)
+			cmp #' ,@(sp)
+			beq chkstart
+			cmp #'c,@(sp)
+			beq addcomp1
+			cmp #'h,@(sp)
+			bne error
+			br addhumn1
+addcomp1:	mov #cmptrmsg,type1
+			add #2,(sp)
+			cmp #' ,@(sp)
+			bne error
+			br time1
+addhumn1:	mov #humanmsg,type1
+			add #2,(sp)
+			cmp #' ,@(sp)
+			bne error
+			br time1
+time1:		mov r1,-(sp)
+			clr r1
+chkspac1:	add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq chkspac1
+			clr num1  				;before using as a counter of digits		
+			clr num2				;before using as a counter of digits
+addigit1:	cmp #60,@2(sp)
+			bhi error
+			cmp #72,@2(sp)
+			blo error
+			add @2(sp),r1
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #timenum1,indxarr;
+			add num1,indxarr
+			mov @2(sp),@indxarr		;moving 1 digit
+			add #2,num1
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			sub #60, r1
+			add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq endtime1
+			mul #12,r1
+			br addigit1
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+endtime1:	add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq endtime1
+			mov r1,timeW
+			clr r1
+			cmp #'c,@2(sp)
+			beq addcomp2
+			cmp #'h,@2(sp)
+			bne error
+			br addhumn2
+addcomp2:	mov #cmptrmsg,type2
+			add #2,2(sp)
+			cmp #' ,@2(sp)
+			bne error1
+			br time2				
+addhumn2:	mov #humanmsg,type2
+			add #2,2(sp)
+			cmp #' ,@2(sp)
+			bne error1
+			br time2
+time2:		add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq time2
+			;add #2,2(sp)
+			cmp #60,@2(sp)
+			bhi error1 ;;;;;;;;;;;;;;;;;;;
+			cmp #72,@2(sp)
+			blo error1
+			add @2(sp),r1
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #timenum2,indxarr;
+			add num2,indxarr
+			mov @2(sp),@indxarr			;moving 1 digit
+			add #2,num2
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			sub #60,r1
+addigit2:	add #2,2(sp)
+			cmp #60,@2(sp)
+			bhi endtime2
+			cmp #72,@2(sp)
+			blo endtime2
+			mul #12,r1
+			add @2(sp),r1
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #timenum2,indxarr;
+			add num2,indxarr
+			mov @2(sp),@indxarr			;moving 1 digit
+			add #2,num2
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			sub #60,r1
+			br addigit2
+error1:		jmp error
+endtime2:	mov r1,timeB
+			mov (sp)+,r1
+			inc startgm
+			tst (sp)+
+			jmp start
+chkmove:	mov r1,-(sp)
+			clr r1
+chkspac2:	add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq chkspac2
+			cmp #60,@2(sp)
+			bhi error1
+			cmp #67,@2(sp)
+			blo error1
+	        add @2(sp),r1
+			sub #60, r1
+			add #2,2(sp)
+			mul #10,r1
+			add @2(sp),r1
+			sub #60,r1
+			cmp #60,@2(sp)
+			bhi error1
+			cmp #67,@2(sp)
+			blo error1
+			add #2,2(sp)
+			cmp #' ,@2(sp)
+			bne error1
+endtime3:	add #2,2(sp)
+			cmp #' ,@2(sp)
+			beq endtime3
+			mov r1,src
+			clr r1
+			;add #2,2(sp)
+			cmp #60,@2(sp)
+			bhi error1
+			cmp #67,@2(sp)
+			blo error1
+			add @2(sp),r1
+			sub #60,r1
+			add #2,2(sp)
+			mul #10,r1
+			add @2(sp),r1
+			sub #60,r1
+			cmp #60,@2(sp)
+			bhi error1
+			cmp #67,@2(sp)
+			blo error1
+endtime4:	mov r1,dest
+			mov (sp)+,r1
+			tst (sp)+
+			
+			
+			;bic #100,cls
+			jmp move			
+			
+;---------------------------------------------------------------------------------------------
+;|                                            start                                           |
+;---------------------------------------------------------------------------------------------			
+
+start:				
+			mov #100, @#tps
+			mov #startmsg, -(sp)
+			mov #LEN3, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #whitemsg, -(sp)
+			mov #LEN4, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #playrmsg, -(sp)
+			mov #LEN5, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp1			;check if the player that was entered is computer or human to print 
+			mov #LEN4, -(sp)		;length of "Human" 
+			br pascomp1
+itscomp1:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp1:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #withmsg, -(sp)
+			mov #LEN7, -(sp)		;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #timenum1,-(sp)
+			mov num1,-(sp)
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #scopnmsg, -(sp)
+			mov #LEN8, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			
+			mov #blackmsg, -(sp)
+			mov #LEN4, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #playrmsg, -(sp)
+			mov #LEN5, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp2			;check if the player that was entered is computer or human to print 
+			mov #LEN4, -(sp)		;length of "Human" 
+			br pascomp2
+itscomp2:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp2:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #withmsg, -(sp)
+			mov #LEN7, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #timenum2,-(sp)
+			mov num2,-(sp)
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #scopnmsg, -(sp)
+			mov #LEN8, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			
+busy_w2:	tstb @#tps 
+			bpl busy_w2				;wait to the printer to be ready to print 
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+			
+;---------------------------------------------------------------------------------------------
+;|                                            GAME                                           |
+;---------------------------------------------------------------------------------------------				
+											
+;this functions will change the printed board by the change in the Board label			
+chngbord:	mov #Board, pointer1	;initialization of pointer1 to the beginning of the board
+			mov #wordbord, pointer2 ;initialization of pointer2 to the beginning of the word board
+			add counter3, pointer1	;will put the current square address to update in the board in pointer1
+			add counter4, pointer2	;will put the current square address to update in the word board in pointer2
+			cmp counter3,#200 		;check if we reached to the end of the board 
+			beq endchang			
+			cmpb @pointer2, #'\r	
+			beq fixplace			;check if it is enter (to skip on)
+			cmp #0, @pointer1		;check if there is zero in the square
+			beq change_				;if there is - go change to  in word board
+			cmp #1, @pointer1		;check if there is zero in the square
+			beq changeW				;if there is - go change to W in word board
+			cmp #2, @pointer1		;check if there is zero in the square
+			beq changeB				;if there is - go change to B in word board
+change_:	movb #'_ , @pointer2	
+			add #2, counter3		;move to next square on Board
+			inc counter4			;move to next square on word board
+			br chngbord
+changeW:	movb #'W, @pointer2
+			add #2, counter3
+			inc counter4	
+			br chngbord
+changeB:	movb #'B, @pointer2
+			add #2, counter3
+			inc counter4
+			br chngbord
+
+fixplace:	add #2, counter4		;continue to next legal square to update (we are in enter)
+			br chngbord
+			
+endchang:	
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #boardlay, -(sp)
+			mov #LEN9, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #wordbord, -(sp)
+			mov #LEN10, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+busy_w7:	tstb @#tps 
+			bpl busy_w7				;wait to the printer to be ready to print 				
+			bpl busy_w7				;wait to the printer to be ready to print 				
+
+			cmp currplr,#1
+			beq blacktrn
+			
+whitetrn:	;;;;;;;;sentences
+			inc currplr
+			;bis #100,cls
+			clr indxarr
+			jmp prdollar
+			
+			
+			
+blacktrn:	dec currplr
+			clr indxarr
+			jmp prdollar
+			
+	
+stop:		halt
+time:		halt
+;---------------------------------------------------------------------------------------------
+;|                                            move                                            |
+;---------------------------------------------------------------------------------------------	
+move:		;bic #100,cls
+			mov #Board,-(sp)
+			jsr r5,movPiece
+src:		.word 0
+dest:		.word 0	
+			tst (sp)+
+			;print time1
+			clr counter3
+			clr counter4
+			jmp chngbord
+			
+;---------------------------------------------------------------------------------------------
+;|                                   general functions                                       |
+;---------------------------------------------------------------------------------------------	
+			
+
+		
+			
+printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
+			bgt printMsg			;if the printer is busy - wait (by loop back to printMsg)
+			mov #1, busy			;turn on the busy flag 
+			mov 4(sp), pointer1		;pointer1 will point to the beginning of the array to print		
+			mov 2(sp), counter1		;counter1 will hold the number of chars to print
+			iot
+			rts pc 
+
+
+;---------------------------------------------------------------------------------------------
+;|                                      commands                                             |
+;---------------------------------------------------------------------------------------------
+
+
+
+;---------------------------------------------------------------------------------------------
+;|                                     interrupts                                            |
+;---------------------------------------------------------------------------------------------
+. = torg + 5000
+
+;interrupt of the printer and iot 
+printc: 	tst counter1 			;check number of words that left to print from array			
+			ble fin					;if there is no word left to print
+			movb @pointer1,@#tpb	;move the pointer1 to the word in the array to print
+			inc pointer1			;will move the pointer1 to point to the next char
+			dec counter1			;will decrease the number of words to print in 1
+			rti
+fin:		clr busy 				;will turn off the flag - 
+			rti
+
+;interrupt of the keyboard
+inp: 		mov r0, -(sp)
+			mov #array, r0 
+			add indxarr, r0			;r0 will hold the address of the next available char 
+			jsr pc, busy_w
+			movb @#tkb, @#tpb 		;send input to the printer
+			movb @#tkb, (r0)
+			cmp @#tkb,#'\b
+			beq backspce
+			cmp @#tkb,#'\r
+			beq enter1
+			inc indxarr
+			inc indxarr
+			bis #1, @#tks			;restore RE bit
+endinp:		mov (sp)+,r0
+			bis #1, @#tks
+			rti
+			
+enter1: 	jsr pc, busy_w
+			movb #'\r ,@#tpb
+			jsr pc, busy_w
+			movb #'\n ,@#tpb
+			jsr pc, busy_w
+			movb #'\r ,@#tpb
+			jsr pc, busy_w
+			movb #'\n ,@#tpb
+			mov indxarr,LENARRAY
+			mov #0, indxarr
+			mov (sp)+, r0
+			add #2, (sp)
+			rti
+			
+backspce:	jsr pc, busy_w
+			movb #' ,@#tpb 
+			jsr pc, busy_w
+			movb #'\b, @#tpb
+			dec indxarr
+			dec indxarr
+			jmp endinp
+			
+busy_w:		tstb @#tps 
+			bpl busy_w				;wait to the printer to be ready to print	
+			rts pc
+
+
+clock:			
+			
+;---------------------------------------------------------------------------------------------
+;|                                     Auxiliary functions                                   |
+;---------------------------------------------------------------------------------------------
+;movPiece - will update a current board by moving a token from one place to other (given places).
+;r5 will hold (move parameter inline) the address of source and destination of the token.
+movPiece: 	mov r0,-(sp) 		;keep current value of r0 in the stack
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp)		;keep current value of r3 in the stack
+			mov r4,-(sp)		;keep current value of r4 in the stack
+			clr r0 				;initialize register
+			clr r1 				;initialize register
+			clr r2 				;initialize register
+			clr r3				;initialize register
+			clr r4				;initialize register
+			mov (r5)+,r0 		;r0 will hold the source point
+			add r0,r0 			;will update the source point to right index (mul in 2, because a word is two bites)
+			mov (r5)+,r1 		;r1 will hold the destination point
+			add r1,r1 			;will update the destination point to right index (mul in 2, because a word is two bites)
+			mov 14(sp),r2 		;r2 will hold the board address
+			add r0,r2 			;r2 will be the pointer to the source place
+			cmp (r2),#1			;check if the player to move is the white
+			beq mov_1			;if the player to move is the white - branch to move it to the destination square
+			cmp (r2),#2			;check if the player to move is the black
+			beq mov_2			;if the player to move is the black - branch to move it to the destination square
+			br endMovPiece		;in case that there is no white or black token at source - finish the function without chages
+mov_1:		mov #2,r4 			;r4 will hold the enemy number
+			clr (r2)			;will turn the source place to zero (as the token of the white moved from the current square)
+			mov 14(sp),r2 		;r2 will hold the pointer to the beginning of the board 			
+			add r1,r2 			;r2 will hold the destination point 
+			mov #1,(r2)			;will update the destination square to 1 (as the white token moved to it) 
+			br checkEat			;check if there is need to eat an enemy token 
+mov_2:      mov #1,r4 			;r4 will hold the enemy number
+			clr (r2)	 		;will turn the source place to zero (as the token of the black moved from the current square)
+			mov 14(sp),r2 		;r2 will hold the pointer to the beginning of the board 			
+			add r1,r2 			;r2 will hold the destination point 
+			mov #2,(r2)			;will update the destination square to 1 (as the black token moved to it)
+			br checkEat			;check if there is need to eat an enemy token 			
+checkEat:	mov 14(sp),r2 		;r2 will hold the pointer to the beginning of the board 
+			cmp r1,r0			;check which one of them is bigger
+			bgt r1big			;check to eat when r1 is bigger than r0 
+			br r0big			;check to eat when r0 is bigger than r1 
+r1big:   	mov r1,r3 			;r3 will hold the destination point 
+			sub r0,r3 			;r3 will hold a the difference of address between source and destination
+			cmp r3,#22			;the most bigger difference in the upper line
+			ble endMovPiece		;if the difference is lower or equal to 22 - there is no enemy to eat
+			cmp r3,#34			;else - there is enemy to eat - it could be in a difference of 34/44 words
+			beq eatrigt1		;eat in right diagonal
+			cmp r3,#44
+			beq eatleft1		;eat in left diagonal						
+eatrigt1: 	add #16,r0			;will update the destination point to the point to eat the enemy
+			add r0,r2 			;will add it to the board in order to eat
+			tst (r2)			;will check if there is a token there
+			beq retrnply		;will return the enemy player 
+			clr (r2)			;will eat the enemy
+			br endMovPiece		;finish after eat the enemy			
+eatleft1:	add #22,r0			;will update the destination point to the point to eat the enemy
+			add r0,r2 			;will add it to the board in order to eat
+			tst (r2)			;will check if there is a token there
+			beq retrnply		;will return the enemy player 
+			clr (r2)			;will eat the enemy
+			br endMovPiece		;finish after eat the enemy			
+r0big:		mov r0,r3 			;r3 will hold the source point 
+			sub r1,r3			;r3 will hold a the difference of address between source and destination
+			cmp r3,#22			;the most bigger difference in the upper line
+			ble endMovPiece		;if the difference is lower or equal to 22 - there is no enemy to eat
+			cmp r3,#34			;else - there is enemy to eat - it could be in a difference of 34/44 words
+			beq eatrigt0		;eat in right diagonal
+			cmp r3,#44
+			beq eatleft0		;eat in left diagonal			
+eatrigt0: 	add #16,r1			;will update the destination point to the point to eat the enemy
+			add r1,r2 			;will add it to the board in order to eat
+			tst (r2)			;will check if there is a token there
+			beq retrnply		;will return the enemy player 
+			clr (r2)			;will eat the enemy
+			br endMovPiece		;finish after eat the enemy			
+eatleft0:  	add #22,r1			;will update the destination point to the point to eat the enemy
+			add r1,r2 			;will add it to the board in order to eat
+			tst (r2)			;will check if there is a token there
+			beq retrnply		;will return the enemy player 
+			clr (r2)			;will eat the enemy
+			br endMovPiece		;finish after eat the enemy			
+retrnply:   mov r4, (r2)		;will return the enemy's token
+			br endMovPiece		;finish after bring the enemy back
+endMovPiece:mov (sp)+,r4
+			mov (sp)+,r3
+			mov (sp)+,r2
+			mov (sp)+,r1
+			mov (sp)+,r0
+			rts r5	
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;			
+				
+			
+			
+
+
+. = torg + 10000
+
+Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	2,	0,	2,	0,	2,	0,	2,	0
+			.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	1,	0,	1,	0,	1,	0,	1,	0
+			.word	0,	1,	0,	1,	0,	1,	0,	1
+			.word	1,	0,	1,	0,	1,	0,	1,	0
+			
+. = torg + 11000
+
+wordbord:	.ascii	<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
+	
+opnmsg: 	.ascii<hello, welcome to chental checkers game!>	
+			.even
+			
+dollar:  	.ascii<\r\n\r\n$>
+			.even
+			
+startmsg:	.ascii<\r\nStarting a new game\r\n\r\n>
+			.even
+			
+whitemsg:	.ascii<White >
+			.even
+			
+blackmsg:	.ascii<Black >
+			.even
+			
+playrmsg:	.ascii<player is >
+			.even
+			
+humanmsg:	.ascii<Human >
+			.even
+			
+cmptrmsg:	.ascii<Computer >
+			.even
+			
+Curntmsg:	.ascii<Current Player: >
+			.even
+			
+withmsg:	.ascii<with >
+			.even
+			
+scopnmsg:	.ascii< seconds per move\r\n\r\n>
+			.even
+			
+boardlay:	.ascii<Board layout:\r\n\r\n>
+			.even
+			
+
+errormsg:	.ascii<\r\nCannot execute >	
+			.even
+
+indxarr: 	.word 0 				;initialize number of chars in the array
+array: 		.blkw 62 				;maximal chars to keep
+counter1:	.word 0					;counter1 to number of words in array
+busy:		.word 0 				;flag to check if printer is busy
+pointer1: 	.blkw 1
+startgm:	.word 0					;flag to check if the game started
+LENARRAY:	.word 0
+pointer2: 	.blkw 1
+counter2:	.word 0					;used to board
+type1:		.blkw 1
+type2:		.blkw 1  
+timeW:		.word 0
+timeB:		.word 0
+timenum1:	.blkw 16
+timenum2:	.blkw 16
+num1:		.word 0 
+num2: 		.word 0	
+currplr:    .word 0
+counter3:	.word 0					;counter3 to number board change
+counter4:	.word 0					;counter4 to number board change
+
+
+
+
+
+. = torg + 20000	
+rate: .word 1000
+
+
