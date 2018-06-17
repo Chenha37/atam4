@@ -15,8 +15,12 @@ LEN8 = 25		;length of word "seconds per move"
 LEN9 = 23		;length of word "Board layout:"
 LEN10 = 120 	;length of board
 LEN_ERROR=21
+<<<<<<< HEAD
 
 ;dddddddddd chen the young
+=======
+;chenchechenchenchcnehcnh
+>>>>>>> 016c61956e4de5f83a5ff54c0bd39035f7843527
 . = torg + 1000 
 
 ;---------------------------------------------------------------------------------------------
