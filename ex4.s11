@@ -15,7 +15,7 @@ LEN8 = 25		;length of word "seconds per move"
 LEN9 = 23		;length of word "Board layout:"
 LEN10 = 120 	;length of board
 LEN_ERROR=21
-taltaltaltaltaltal
+;taltaltaltaltaltal
 
 . = torg + 1000 
 
