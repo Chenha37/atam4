@@ -16,6 +16,7 @@ LEN9 = 23		;length of word "Board layout:"
 LEN10 = 120 	;length of board
 LEN_ERROR=21
 
+;dddddddddd chen the young
 . = torg + 1000 
 
 ;---------------------------------------------------------------------------------------------
