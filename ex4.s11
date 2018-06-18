@@ -5,7 +5,7 @@ tpb = 177566
 cls = 177546
 NIL = 0
 LEN1 = 50		;length of Welcome message
-LEN2 = 5		;length of dollar
+LEN2 = 6		;length of dollar
 LEN3 = 27 		;length of starting message
 LEN4 = 6 		;length of "white"/"black"
 LEN5 = 12		;length of word "player is "/"move took "
@@ -18,7 +18,7 @@ LEN11 = 14 		;length of "seconds."
 LEN12 = 6 		;length of "Human" 
 LEN13 = 20		;length of "Current Player: "
 LEN14 = 2
-LEN_ERROR=21
+LEN_ERROR=22
 
 . = torg + 1000 
 
@@ -138,6 +138,10 @@ error:		tst (sp)+
 			mov LENARRAY,-(sp)
 			jsr pc, printMsg
 			add #4,sp
+			mov #parnmsg,-(sp) 		;print " to close
+			mov #1,-(sp)
+			jsr pc, printMsg
+			add #4,sp
 			bis #1, @#tks
 			jmp prdollar	
 chkstart:   add #2,(sp)
@@ -194,7 +198,7 @@ endtime1:	add #2,2(sp)
 			cmp #'c,@2(sp)
 			beq addcomp2
 			cmp #'h,@2(sp)
-			bne error
+			bne error1
 			br addhumn2
 addcomp2:	mov #cmptrmsg,type2
 			add #2,2(sp)
@@ -936,7 +940,7 @@ wordbord:	.ascii<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W
 opnmsg: 	.ascii<hello, welcome to chental checkers game!>	
 			.even
 			
-dollar:  	.ascii<\r\n\r\n$>
+dollar:  	.ascii<\r\n\r\n$ >
 			.even
 			
 startmsg:	.ascii<\r\nStarting a new game\r\n\r\n>
@@ -969,7 +973,7 @@ scopnmsg:	.ascii< seconds per move\r\n\r\n>
 boardlay:	.ascii<\r\nBoard layout:\r\n\r\n>
 			.even
 			
-errormsg:	.ascii<\r\nCannot execute >	
+errormsg:	.ascii<\r\nCannot execute ">	
 			.even
 			
 timemsg:	.ascii<move took >	
@@ -979,6 +983,9 @@ secmsg:		.ascii<seconds.\r\n\r\n>
 			.even
 			
 entermsg:	.ascii<\r\n>	
+			.even
+			
+parnmsg:	.ascii<">	
 			.even
 
 indxarr: 	.word 0 				;initialize number of chars in the array
