@@ -6,21 +6,20 @@ cls = 177546
 NIL = 0
 LEN1 = 50		;length of Welcome message
 LEN2 = 5		;length of dollar
-LEN3 = 31 		;length of starting message
-LEN4 = 6 		;length of "white"/"black"/"Human"
-LEN5 = 12		;length of word "player is "
+LEN3 = 27 		;length of starting message
+LEN4 = 6 		;length of "white"/"black"
+LEN5 = 12		;length of word "player is "/"move took "
 LEN6 = 11		;length of word "Computer"
 LEN7 = 5		;length of word "with "
-LEN8 = 25		;length of word "seconds per move"
-LEN9 = 23		;length of word "Board layout:"
+LEN8 = 23		;length of word "seconds per move"
+LEN9 = 25		;length of word "Board layout:"
 LEN10 = 120 	;length of board
+LEN11 = 14 		;length of "seconds."
+LEN12 = 6 		;length of "Human" 
+LEN13 = 20		;length of "Current Player: "
+LEN14 = 2
 LEN_ERROR=21
-<<<<<<< HEAD
 
-;dddddddddd chen the young
-=======
-;chenchechenchenchcnehcnh
->>>>>>> 016c61956e4de5f83a5ff54c0bd39035f7843527
 . = torg + 1000 
 
 ;---------------------------------------------------------------------------------------------
@@ -52,6 +51,8 @@ prdollar:  	mov #dollar, -(sp)
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
+			;print the end message out of time use flag currplr
+			halt
 			
 			
 ;---------------------------------------------------------------------------------------------
@@ -288,9 +289,157 @@ endtime4:	mov r1,dest
 			mov (sp)+,r1
 			tst (sp)+
 			
+									clr r0           ;Initialize registers
+			clr r1				
+			clr r2
+			clr r3
+			cmp currplr,#0   
+			beq black		 		
+						  
+		
+
+white:  					
+			clr r2
+			clr r3
+			cmp src,dest
+			blos error1
+			mov src,r0
+			add r0,r0
+			cmp Board(r0),#1
+			bne error1
+			mov dest,r1
+			add r1,r1 
+			cmp Board(r1),#0
+			bne error1
+			mov r0,r3
+			div #20,r2        ;in order to understand in which line in the board the current token is 
+			tst r2
+			beq error3        ;if r2 is zero it means that the token can't move
+			sub #16,r0
+			cmp r0,r1
+			beq rd1plr1
+			sub #4,r0
+			cmp r0,r1
+			beq ld1plr1
+			sub #12,r0
+			cmp r0,r1
+			beq rd2plr1
+			sub #10,r0
+			cmp r0,r1
+			beq ld2plr1
+error3:		jmp error
 			
-			;bic #100,cls
-			jmp move			
+rd1plr1:	cmp #16,r3
+			beq error3
+			jmp endchkmov
+ld1plr1:	cmp #0,r3
+			beq error3
+			jmp endchkmov
+rd2plr1:	cmp #16,r3
+			beq error3
+			cmp #14,r3
+			beq error3
+			cmp r2,#1
+			beq error3
+			mov src,r4
+			add src,r4
+			sub #16,r4
+			cmp Board(r4),#1
+			beq error3
+			cmp Board(r4),#0
+			beq error3
+			jmp endchkmov
+ld2plr1:	cmp #0,r3
+			beq error2
+			cmp #2,r3
+			beq error2
+			cmp r2,#1
+			beq error2
+			mov src,r4
+			add src,r4
+			sub #22,r4
+			cmp Board(r4),#1
+			beq error2
+			cmp Board(r4),#0
+			beq error2
+			jmp endchkmov
+		 
+black:  					
+			clr r2
+			clr r3
+			cmp dest,src
+			blos error2
+			mov src,r0
+			add r0,r0
+			cmp Board(r0),#2
+			bne error2
+			mov dest,r1
+			add r1,r1 
+			cmp Board(r1),#0
+			bne error2
+			mov r0,r3
+			div #20,r2        ;in order to understand in which line in the board the current token is 
+			cmp r2,#7
+			beq error2        ;if r2 is 7line it means that the token can't move
+			
+			add #16,r0
+			cmp r0,r1
+			beq ld1plr2
+			
+			add #4,r0
+			cmp r0,r1
+			beq rd1plr2
+			
+			
+			add #12,r0
+			cmp r0,r1
+			beq ld2plr2
+			
+			add #10,r0
+			cmp r0,r1
+			beq rd2plr2
+			jmp error2
+ld1plr2:	cmp #0,r3
+			beq error2
+			jmp endchkmov
+rd1plr2:	cmp #16,r3
+			beq error2
+			jmp endchkmov
+ld2plr2:	cmp #0,r3
+			beq error2
+			cmp #2,r3
+			beq error2
+			cmp #6,r2
+			beq error2
+			mov src,r4
+			add src,r4
+			add #16,r4
+			cmp Board(r4),#2
+			beq error2
+			cmp Board(r4),#0
+			beq error2
+			jmp endchkmov
+rd2plr2:	cmp #16,r3
+			beq error2
+			cmp #14,r3
+			beq error2
+			cmp #6,r2
+			mov src,r4
+			add src,r4
+			add #22,r4
+			cmp Board(r4),#2
+			beq error2
+			cmp Board(r4),#0
+			beq error2
+			jmp endchkmov		
+error2:		jmp error1
+	
+endchkmov:	
+			bic #100,cls
+			jmp move
+			
+			
+
 			
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
@@ -302,6 +451,8 @@ start:
 			mov #LEN3, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
+			
+			jsr pc, linedrop
 			
 			mov #whitemsg, -(sp)
 			mov #LEN4, -(sp)
@@ -316,7 +467,7 @@ start:
 			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
 			cmpb #'C, @(sp)			
 			beq itscomp1			;check if the player that was entered is computer or human to print 
-			mov #LEN4, -(sp)		;length of "Human" 
+			mov #LEN12, -(sp)		;length of "Human" 
 			br pascomp1
 itscomp1:	mov #LEN6, -(sp)		;length of "Computer"
 pascomp1:	jsr pc, printMsg
@@ -339,7 +490,7 @@ pascomp1:	jsr pc, printMsg
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			jsr pc, linedrop
 			
 			mov #blackmsg, -(sp)
 			mov #LEN4, -(sp)
@@ -354,7 +505,7 @@ pascomp1:	jsr pc, printMsg
 			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
 			cmpb #'C, @(sp)			
 			beq itscomp2			;check if the player that was entered is computer or human to print 
-			mov #LEN4, -(sp)		;length of "Human" 
+			mov #LEN12, -(sp)		;length of "Human" 
 			br pascomp2
 itscomp2:	mov #LEN6, -(sp)		;length of "Computer"
 pascomp2:	jsr pc, printMsg
@@ -377,12 +528,13 @@ pascomp2:	jsr pc, printMsg
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			jsr pc, linedrop
 			
 busy_w2:	tstb @#tps 
 			bpl busy_w2				;wait to the printer to be ready to print 
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-			
+
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
 ;---------------------------------------------------------------------------------------------				
@@ -431,21 +583,60 @@ endchang:
 			add #4,sp				;pop to the message and to the length
 			
 busy_w7:	tstb @#tps 
-			bpl busy_w7				;wait to the printer to be ready to print 				
-			bpl busy_w7				;wait to the printer to be ready to print 				
+			bpl busy_w7				;wait to the printer to be ready to print 				 				
 
+			jsr pc, linedrop
 			cmp currplr,#1
 			beq blacktrn
 			
 whitetrn:	;;;;;;;;sentences
+			mov #Curntmsg, -(sp)
+			mov #LEN13, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov #whitemsg, -(sp)
+			mov #LEN4, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+ 
+			mov type1, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp5			;check if the player that was entered is computer or human to print 
+			mov #LEN12, -(sp)		;length of "Human" 
+			br pascomp5
+itscomp5:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp5:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+ 
+			bis #100,cls
 			inc currplr
-			;bis #100,cls
 			clr indxarr
 			jmp prdollar
 			
+						
+blacktrn:	;;;;sentences for current player
+			mov #Curntmsg, -(sp)
+			mov #LEN13, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
 			
+			mov #blackmsg, -(sp)
+			mov #LEN4, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
 			
-blacktrn:	dec currplr
+			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp6			;check if the player that was entered is computer or human to print 
+			mov #LEN12, -(sp)		;length of "Human" 
+			br pascomp6
+itscomp6:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp6:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			bis #100,cls
+			dec currplr
 			clr indxarr
 			jmp prdollar
 			
@@ -455,23 +646,84 @@ time:		halt
 ;---------------------------------------------------------------------------------------------
 ;|                                            move                                            |
 ;---------------------------------------------------------------------------------------------	
-move:		;bic #100,cls
+move:		bic #100,cls
 			mov #Board,-(sp)
 			jsr r5,movPiece
 src:		.word 0
 dest:		.word 0	
 			tst (sp)+
-			;print time1
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			;print time took message
+			jsr pc, linedrop
+			cmp currplr,#0		;check who is the player to print 
+			beq blackprt		
+
+whiteprt:	mov #whitemsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			
+			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp3			;check if the player that was entered is computer or human to print 
+			mov #LEN12, -(sp)		;length of "Human" 
+			br pascomp3
+itscomp3:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp3:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			br contprt
+			
+blackprt:	mov #blackmsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+			
+			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			cmpb #'C, @(sp)			
+			beq itscomp4			;check if the player that was entered is computer or human to print 
+			mov #LEN12, -(sp)		;length of "Human" 
+			br pascomp4
+itscomp4:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp4:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+
+contprt:	mov #timemsg, -(sp)
+			mov #LEN5, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			
+			mov countsec, -(sp)
+			mov #1, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #secmsg, -(sp)
+			mov #LEN11, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+
+busy_w5:	tstb @#tps 
+			bpl busy_w5
+			
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			clr countsec
+			clr countrst
 			clr counter3
 			clr counter4
+		
 			jmp chngbord
 			
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
-			
-
-		
+linedrop:	mov #entermsg, -(sp)
+			mov #2, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+			rts pc 		
 			
 printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			bgt printMsg			;if the printer is busy - wait (by loop back to printMsg)
@@ -480,7 +732,6 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			mov 2(sp), counter1		;counter1 will hold the number of chars to print
 			iot
 			rts pc 
-
 
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
@@ -491,7 +742,7 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 ;---------------------------------------------------------------------------------------------
 ;|                                     interrupts                                            |
 ;---------------------------------------------------------------------------------------------
-. = torg + 5000
+. = torg + 7000
 
 ;interrupt of the printer and iot 
 printc: 	tst counter1 			;check number of words that left to print from array			
@@ -548,7 +799,27 @@ busy_w:		tstb @#tps
 			rts pc
 
 
-clock:			
+clock:		inc countrst
+			cmp #1000.,countrst	
+			beq resett
+			rti
+resett:		clr countrst
+			inc countsec
+			cmp currplr, #0
+			beq fintimB  
+			cmp timeW,countsec
+			beq endturn1
+			rti
+endturn1:   bic #100,@#cls
+			add #6,(sp)
+			rti
+fintimB:	cmp timeB,countsec
+			beq endturn2
+			rti 	
+endturn2:	bic #100,@#cls 
+			add #6,(sp)
+			rti
+			
 			
 ;---------------------------------------------------------------------------------------------
 ;|                                     Auxiliary functions                                   |
@@ -659,7 +930,8 @@ Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
 			
 . = torg + 11000
 
-wordbord:	.ascii	<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
+wordbord:	.ascii<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
+			.even
 	
 opnmsg: 	.ascii<hello, welcome to chental checkers game!>	
 			.even
@@ -694,11 +966,19 @@ withmsg:	.ascii<with >
 scopnmsg:	.ascii< seconds per move\r\n\r\n>
 			.even
 			
-boardlay:	.ascii<Board layout:\r\n\r\n>
+boardlay:	.ascii<\r\nBoard layout:\r\n\r\n>
 			.even
 			
-
 errormsg:	.ascii<\r\nCannot execute >	
+			.even
+			
+timemsg:	.ascii<move took >	
+			.even
+			
+secmsg:		.ascii<seconds.\r\n\r\n>	
+			.even
+			
+entermsg:	.ascii<\r\n>	
 			.even
 
 indxarr: 	.word 0 				;initialize number of chars in the array
@@ -721,12 +1001,14 @@ num2: 		.word 0
 currplr:    .word 0
 counter3:	.word 0					;counter3 to number board change
 counter4:	.word 0					;counter4 to number board change
+countrst:	.word 0
+countsec:	.word 0
 
 
 
 
 
 . = torg + 20000	
-rate: .word 1000
+rate: .word 1000.
 
 
