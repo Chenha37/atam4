@@ -27,20 +27,20 @@ LEN_ERROR=22
 ;---------------------------------------------------------------------------------------------
 
 main: 		mov #main, sp
-			mov #printc, @#20
+			mov #printc, @#20		;initialize iot vector
 			mov #340, @#22
-			mov #printc, @#64
+			mov #printc, @#64		;initialize printer vector
 			mov #200, @#66
-			mov #100, @#tps
-			mov #inp, @#60 			;keyboard Interrupt vector initialization
+			mov #100, @#tps			;turn on the IE of the printer			
+			mov #inp, @#60 			;initialize keyboard vector
 			mov #200, @#62
-			mov #opnmsg, -(sp)
+			mov #opnmsg, -(sp)		;print the open message
 			mov #LEN1, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length   
-			mov #clock, @#100
+			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
-			bis #101,@#tks			;change IE,RE to 1
+			bis #101,@#tks			;turn on the IE,RE of the keyboard
 			
 			
 prdollar:  	mov #dollar, -(sp)
@@ -51,14 +51,16 @@ prdollar:  	mov #dollar, -(sp)
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
-			;print the end message out of time use flag currplr
+			;print the end message out of time use flag current player
 			halt
 ;---------------------------------------------------------------------------------------------
 ;|                                 checking if the input is legal                            |
 ;---------------------------------------------------------------------------------------------	
-checkinp:
-			mov #array,-(sp)
-			cmp #'s,@(sp)
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is start ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+checkinp:   mov #array,-(sp)	;check if the command is start
+			cmp #'s,@(sp)			
 			bne check2
 			add #2,(sp)
 			cmp #'t,@(sp)
@@ -75,10 +77,13 @@ checkinp:
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
-			cmp startgm,0
+			cmp startgm,#0		;check if the game already started
 			bne error
-			br chkstart			
-check2:     tst (sp)+
+			jmp chkstart	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is move ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+check2:     tst (sp)+			;check if the command is move 
 		    mov #array,-(sp)
 			cmp #'m,@(sp)
 			bne check3
@@ -94,10 +99,13 @@ check2:     tst (sp)+
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
-			cmp #1,startgm
+			cmp #1,startgm		;check if the game already started
 			bne error
-			jmp chkmove						
-check3:		tst (sp)+
+			jmp chkmove	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is stop ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+check3:		tst (sp)+			;check if the command is stop
 		    mov #array,-(sp)
 			cmp #'s,@(sp)
 			bne check4
@@ -110,9 +118,14 @@ check3:		tst (sp)+
 			add #2,(sp)
 			cmp #'p,@(sp)
 			bne check4
+			cmp #1,startgm		;check if the game already started
+			bne error
 			tst (sp)+
 			jmp stop
-			check4:		tst (sp)+
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is time ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+check4:		tst (sp)+			;check if the command is stop
 		    mov #array,-(sp)
 			cmp #'t,@(sp)
 			bne error
@@ -125,32 +138,40 @@ check3:		tst (sp)+
 			add #2,(sp)
 			cmp #'e,@(sp)
 			bne error
+			cmp #1,startgm		;check if the game already started
+			bne error
 			tst (sp)+
-			jmp time	
+			jmp time
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  error   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
 error:		tst (sp)+
-			mov #errormsg,-(sp)
+			mov #errormsg,-(sp)	;print the error message
 			mov #LEN_ERROR,-(sp)
 			jsr pc, printMsg
 			add #4,sp
-			mov #array,-(sp)
+			mov #array,-(sp)	;print the wrong input
 			mov LENARRAY,-(sp)
 			jsr pc, printMsg
 			add #4,sp
-			mov #parnmsg,-(sp) 		;print " to close
+			mov #parnmsg,-(sp) 	;print " to close
 			mov #1,-(sp)
 			jsr pc, printMsg
-			add #4,sp
-			bis #1, @#tks
-			jmp prdollar	
-chkstart:   add #2,(sp)
+			add #4,sp			;pop the stack
+			bis #1, @#tks		;turn on the option to write an input
+			jmp prdollar		;print dollar and waiting for entering an input
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+chkstart:   add #2,(sp)			;ignore spaces
 			cmp #' ,@(sp)
 			beq chkstart
-			cmp #'c,@(sp)
-			beq addcomp1
+			cmp #'c,@(sp)			
+			beq addcomp1		;check which type is the white player
 			cmp #'h,@(sp)
-			bne error
+			bne error			
 			br addhumn1
-addcomp1:	mov #cmptrmsg,type1
+addcomp1:	mov #cmptrmsg,type1	;add the type of player 1 to type1
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
@@ -162,12 +183,12 @@ addhumn1:	mov #humanmsg,type1
 			br time1
 time1:		mov r1,-(sp)
 			clr r1
-chkspac1:	add #2,2(sp)
+chkspac1:	add #2,2(sp)		;ignore spaces
 			cmp #' ,@2(sp)
 			beq chkspac1
-			clr num1  				;before using as a counter of digits		
-			clr num2				;before using as a counter of digits
-addigit1:	cmp #60,@2(sp)
+			clr num1  			;before using as a counter of digits		
+			clr num2			;before using as a counter of digits
+addigit1:	cmp #60,@2(sp)		;checking that the input is really number
 			bhi error
 			cmp #72,@2(sp)
 			blo error
@@ -176,11 +197,11 @@ addigit1:	cmp #60,@2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum1,indxarr;
 			add num1,indxarr
-			mov @2(sp),@indxarr		;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num1
 			
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			sub #60, r1
+			sub #60, r1			;convert the number to octal from ascii value
 			add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
@@ -191,14 +212,14 @@ addigit1:	cmp #60,@2(sp)
 endtime1:	add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
-			mov r1,timeW
-			clr r1
+			mov r1,timeW		;move the number to timeW
+			clr r1				;check which type is the black player
 			cmp #'c,@2(sp)
 			beq addcomp2
 			cmp #'h,@2(sp)
 			bne error1
 			br addhumn2
-addcomp2:	mov #cmptrmsg,type2
+addcomp2:	mov #cmptrmsg,type2	;move the type of the black player to type2
 			add #2,2(sp)
 			cmp #' ,@2(sp)
 			bne error1
@@ -208,11 +229,11 @@ addhumn2:	mov #humanmsg,type2
 			cmp #' ,@2(sp)
 			bne error1
 			br time2
-time2:		add #2,2(sp)
+time2:		add #2,2(sp)		;ignore of spaces
 			cmp #' ,@2(sp)
 			beq time2
 			;add #2,2(sp)
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking that the input is really number
 			bhi error1 ;;;;;;;;;;;;;;;;;;;
 			cmp #72,@2(sp)
 			blo error1
@@ -220,10 +241,10 @@ time2:		add #2,2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
-			mov @2(sp),@indxarr			;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			sub #60,r1
+			sub #60,r1			;convert the number to octal from ascii value
 addigit2:	add #2,2(sp)
 			cmp #60,@2(sp)
 			bhi endtime2
@@ -234,33 +255,36 @@ addigit2:	add #2,2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
-			mov @2(sp),@indxarr			;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			sub #60,r1
 			br addigit2
 error1:		jmp error
-endtime2:	mov r1,timeB
+endtime2:	mov r1,timeB		;move the number to timeW
 			mov (sp)+,r1
-			inc startgm
+			inc startgm			;start the game after checking hat the start is ik
 			tst (sp)+
 			jmp start
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's move is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 chkmove:	mov r1,-(sp)
 			clr r1
-chkspac2:	add #2,2(sp)
+chkspac2:	add #2,2(sp)		;ignore spaces
 			cmp #' ,@2(sp)
 			beq chkspac2
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
 	        add @2(sp),r1
-			sub #60, r1
+			sub #60, r1			;convert the number from ascii value to octal value
 			add #2,2(sp)
 			mul #10,r1
 			add @2(sp),r1
 			sub #60,r1
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
@@ -278,72 +302,96 @@ endtime3:	add #2,2(sp)
 			cmp #67,@2(sp)
 			blo error1
 			add @2(sp),r1
-			sub #60,r1
-			add #2,2(sp)
+			sub #60,r1			;checking if the numbers are with two digits and in the rate between 0-7
+			add #2,2(sp)		;convert the number from ascii value to octal value
 			mul #10,r1
 			add @2(sp),r1
 			sub #60,r1
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
-endtime4:	mov r1,dest
+			mov r1,dest
 			mov (sp)+,r1
 			tst (sp)+
 			
-									clr r0           ;Initialize registers
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if there is no move to the current player ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+			mov #Board,-(sp)	;we are about to use NumMoves, that gets the board and current player
+			cmp Player,#1
+			beq chknomv2
+			mov #1,-(sp)
+			jsr pc,NumMoves
+			cmp #0,(sp)			;checking if there is no more moves
+			beq nomoves
+			tst(sp)+
+			br contchk
+chknomv2:	mov #2,-(sp) 
+			jsr pc,NumMoves
+			cmp #0,(sp) 		;checking if there is no more moves	
+			beq nomoves
+			tst(sp)+
+			br contchk
+nomoves:	tst (sp)+			;if there is no moves the 
+			cmp src,#0
+			bne error3
+			cmp dest,#0
+			bne error3
+			jmp endchkmov
+					
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+									
+contchk:	clr r0              ;Initialize registers
 			clr r1				
 			clr r2
 			clr r3
-			cmp currplr,#0   
-			beq black		 		
-						  
-		
-
-white:  					
+			cmp Player,#1       ;checking who is the current player
+			beq black	
+	 		
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+						    	
 			clr r2
 			clr r3
-			cmp src,dest
-			blos error1
-			mov src,r0
-			add r0,r0
-			cmp Board(r0),#1
-			bne error1
-			mov dest,r1
+			cmp src,dest		;checking that the source and destination is not the same
+			blos error3
+			mov src,r0			;move the source to r0
+			add r0,r0			
+			cmp Board(r0),#1	;check if there is a white token in the source
+			bne error3
+			mov dest,r1			;move the destination to r1
 			add r1,r1 
-			cmp Board(r1),#0
-			bne error1
+			cmp Board(r1),#0	;check if there is no token in the destination
+			bne error3
 			mov r0,r3
-			div #20,r2        ;in order to understand in which line in the board the current token is 
+			div #20,r2          ;in order to understand in which line in the board the current token is 
 			tst r2
-			beq error3        ;if r2 is zero it means that the token can't move
+			beq error3          ;if r2 is zero it means that the token can't move
 			sub #16,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the first right diagonal 
 			beq rd1plr1
 			sub #4,r0
-			cmp r0,r1
-			beq ld1plr1
+			cmp r0,r1			;check if the move is to the first left diagonal
+			beq ld1plr1			
 			sub #12,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second right diagonal(eating)
 			beq rd2plr1
 			sub #10,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second left diagonal(eating)
 			beq ld2plr1
-error3:		jmp error
-			
-rd1plr1:	cmp #16,r3
+error3:		jmp error			
+rd1plr1:	cmp #16,r3        	;if the token is on the right side of the board, there is no right diagonal  
 			beq error3
 			jmp endchkmov
-ld1plr1:	cmp #0,r3
+ld1plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
 			beq error3
 			jmp endchkmov
-rd2plr1:	cmp #16,r3
+rd2plr1:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error3
-			cmp #14,r3
+			cmp #14,r3			;if the token is on the 2right side of the board, there is no option to eat right   
 			beq error3
-			cmp r2,#1
+			cmp r2,#1			;if the quotient is 1(token's line), there is no option to eat the enemy
 			beq error3
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			sub #16,r4
 			cmp Board(r4),#1
@@ -351,13 +399,12 @@ rd2plr1:	cmp #16,r3
 			cmp Board(r4),#0
 			beq error3
 			jmp endchkmov
-ld2plr1:	cmp #0,r3
+ld2plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left 
+			cmp #2,r3			;if the token is on the 2'left side of the board, there is no option to eat left 
 			beq error2
-			cmp #2,r3
+			cmp r2,#1			;if the quotient is 1(token's line), there is no option to eat the enemy
 			beq error2
-			cmp r2,#1
-			beq error2
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			sub #22,r4
 			cmp Board(r4),#1
@@ -365,55 +412,51 @@ ld2plr1:	cmp #0,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		 
-black:  					
-			clr r2
+black: 		clr r2
 			clr r3
-			cmp dest,src
+			cmp dest,src		;checking that the source and destination is not the same
 			blos error2
-			mov src,r0
+			mov src,r0			;move the source to r0
 			add r0,r0
-			cmp Board(r0),#2
+			cmp Board(r0),#2	;check if there is a black token in the source
 			bne error2
-			mov dest,r1
+			mov dest,r1			;move the destination to r1
 			add r1,r1 
-			cmp Board(r1),#0
+			cmp Board(r1),#0	;check if there is no token in the destination
 			bne error2
 			mov r0,r3
-			div #20,r2        ;in order to understand in which line in the board the current token is 
+			div #20,r2          ;in order to understand in which line in the board the current token is 
 			cmp r2,#7
-			beq error2        ;if r2 is 7line it means that the token can't move
-			
+			beq error2          ;if r2 is 7line it means that the token can't move
 			add #16,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the first left diagonal
 			beq ld1plr2
-			
-			add #4,r0
-			cmp r0,r1
+			add #4,r0			
+			cmp r0,r1			;check if the move is to the first right diagonal
 			beq rd1plr2
-			
-			
 			add #12,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second left diagonal
 			beq ld2plr2
-			
 			add #10,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second right diagonal
 			beq rd2plr2
 			jmp error2
-ld1plr2:	cmp #0,r3
+ld1plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
 			beq error2
 			jmp endchkmov
-rd1plr2:	cmp #16,r3
+rd1plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no right diagonal  
 			beq error2
 			jmp endchkmov
-ld2plr2:	cmp #0,r3
+ld2plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left  
 			beq error2
-			cmp #2,r3
+			cmp #2,r3			;if the token is on the left side of the board, there is no option to eat left 
 			beq error2
-			cmp #6,r2
+			cmp #6,r2			;if the quotient is 6(token's line), there is no option to eat the enemy
 			beq error2
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			add #16,r4
 			cmp Board(r4),#2
@@ -421,12 +464,13 @@ ld2plr2:	cmp #0,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov
-rd2plr2:	cmp #16,r3
+rd2plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
-			cmp #14,r3
+			cmp #14,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
-			cmp #6,r2
-			mov src,r4
+			cmp #6,r2			;if the quotient is 6(token's line), there is no option to eat the enemy
+			beq error2			
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			add #22,r4
 			cmp Board(r4),#2
@@ -434,21 +478,71 @@ rd2plr2:	cmp #16,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov		
-error2:		jmp error1
-	
-endchkmov:	
-			bic #100,cls
+error2:		jmp error1	
+endchkmov:	bic #100,cls
 			jmp move
-			
-			
+						
+;---------------------------------------------------------------------------------------------
+;|                                            move                                            |
+;---------------------------------------------------------------------------------------------	
 
+move:		bic #100,cls
+			mov #Board,-(sp)
+			jsr r5,movPiece
+src:		.word 0
+dest:		.word 0	
+			tst (sp)+
 			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			jsr pc, linedrop
+			cmp Player,#1		;check who is the player to print 
+			beq blackprt		
+
+			mov #whitemsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			
+			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			jsr pc, printwho
+			add #2,sp				;pop to the message (the type)
+			br contprt
+			
+blackprt:	mov #blackmsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+			
+			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			jsr pc, printwho
+			add #2,sp				;pop to the message (type)
+
+contprt:	mov #timemsg, -(sp)
+			mov #LEN5, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			jsr pc,octTodec
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #secmsg, -(sp)
+			mov #LEN11, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+
+busy_w5:	tstb @#tps 
+			bpl busy_w5
+			
+			clr countsec		;initialization before using the clock again
+			clr countrst		;initialization before using the clock again
+			clr counter3
+			clr counter4
+		
+			jmp chngbord
+								
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 
-start:				
-			mov #100, @#tps
+start:		mov #100, @#tps
 			mov #startmsg, -(sp)
 			mov #LEN3, -(sp)
 			jsr pc, printMsg
@@ -526,7 +620,6 @@ busy_w2:	tstb @#tps
 			bpl busy_w2				;wait to the printer to be ready to print 
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
 ;---------------------------------------------------------------------------------------------				
@@ -558,30 +651,28 @@ changeB:	movb #'B, @pointer2
 			add #2, counter3
 			inc counter4
 			br chngbord
-
 fixplace:	add #2, counter4		;continue to next legal square to update (we are in enter)
-			br chngbord
-			
+			br chngbord			
 endchang:	
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #boardlay, -(sp)
 			mov #LEN9, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			
 			mov #wordbord, -(sp)
 			mov #LEN10, -(sp)
 			jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
-			
+			add #4,sp				;pop to the message and to the length			
 busy_w7:	tstb @#tps 
-			bpl busy_w7				;wait to the printer to be ready to print 				 				
-
+			bpl busy_w7				;wait to the printer to be ready to print 
+			
 			jsr pc, linedrop
-			cmp currplr,#1
+			cmp Player,#2
 			beq blacktrn
 			
-whitetrn:	;;;;;;;;sentences
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   white turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
+			;;;;;;;;sentences
 			mov #Curntmsg, -(sp)
 			mov #LEN13, -(sp)
 			jsr pc, printMsg
@@ -596,11 +687,15 @@ whitetrn:	;;;;;;;;sentences
 			jsr pc, printwho
 			add #2,sp				;pop to the message (type)
  
+;בדיקה אם זה מחשב או אנושי
+ 
+ 
 			bis #100,cls
-			inc currplr
+			inc Player
 			clr indxarr
 			jmp prdollar
 			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   black turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 						
 blacktrn:	;;;;sentences for current player
 			mov #Curntmsg, -(sp)
@@ -616,14 +711,18 @@ blacktrn:	;;;;sentences for current player
 			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
 			jsr pc, printwho		;go to print Computer or Human 
 			add #2,sp				;pop to the message and to the length
+
+;בידקה אם מחשב או אנושי
+
 			
 			bis #100,cls
-			dec currplr
+			dec Player
 			clr indxarr
 			jmp prdollar
 			
 	
 stop:		halt
+<<<<<<< HEAD
 time:		halt
 ;---------------------------------------------------------------------------------------------
 ;|                                            move                                            |
@@ -683,6 +782,9 @@ busy_w5:	tstb @#tps
 		
 			jmp chngbord
 			
+=======
+time:		halt			
+>>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
@@ -718,7 +820,11 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			iot
 			rts pc 
 			
+<<<<<<< HEAD
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print octal in decimal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+=======
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~- print octal in decimal -~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
 
 octTodec: 	mov r2, -(sp)			;keep the original value of r2
 			mov r3, -(sp)			;keep the original value of r3
@@ -767,6 +873,10 @@ endoctal:	mov (sp)+, r3
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
 ;---------------------------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -826,7 +936,7 @@ backspce:	jsr pc, busy_w
 			jmp endinp
 			
 busy_w:		tstb @#tps 
-			bpl busy_w				;wait to the printer to be ready to print	
+			bpl busy_w			;wait to the printer to be ready to print	
 			rts pc
 
 
@@ -836,7 +946,7 @@ clock:		inc countrst
 			rti
 resett:		clr countrst
 			inc countsec
-			cmp currplr, #0
+			cmp Player, #1
 			beq fintimB  
 			cmp timeW,countsec
 			beq endturn1
@@ -855,8 +965,515 @@ endturn2:	bic #100,@#cls
 ;---------------------------------------------------------------------------------------------
 ;|                                     Auxiliary functions                                   |
 ;---------------------------------------------------------------------------------------------
+
+;getMaxWP -gets the current board player, and step in labels and calculate the best step for the current player
+;the parameters are enter in the label, and gets the addresses in stack for the return values.  
+;getMaxWP returns in addresses the best move(source and destination), and the WP
+;the WP is return in r4 
+;---------------------------------------------------------------------------------------------
+;|                                 				get Max WP                                    |
+;---------------------------------------------------------------------------------------------	
+	
+getMaxWP:
+								;checking if in the current board there is no steps to do  			
+	        mov #Board,-(sp)	;move the Board to the top of the stack
+			mov #1,-(sp)		;move Player 1 to the top of the stack
+			jsr pc,NumMoves		;call NumMoves
+			cmp (sp),0			;NumMoves returns the number of moves in the top of the stack
+			bne chkwinfs		;if there is steps continue to check if in the current board there is a winning situation
+			tst (sp)+			;pop the stack
+			mov #2,(sp)			;move Player 2 to the top of the stack
+			jsr pc,NumMoves		;call NumMoves
+			cmp (sp),0			;NumMoves returns the number of moves in the top of the stack
+			bne chkwinfs		;if there is steps continue to check if in the current board there is a winning situation
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			mov #Board,-(sp)	;move the Board to the top of the stack	
+			mov Player,-(sp)	;move the current Player to the top of the stack	
+			jsr pc,fndtoken		;check were is token in the color of the current Player
+			mov r4, -(sp)		;we are about to use r4 for returning the wp
+			mov #Board, -(sp)	;move the Board to the top of the stack
+			mov Player,-(sp)	;move the current Player to the top of the stack
+			jsr pc,calcWP		;calculate the current wp
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			mov r4,@12(sp)		;move the current wp to its address
+			mov (sp)+,r4		;back the r4 value to r4
+			mov (sp),@14(sp)	;move the place of the token to the source	
+			mov (sp),@12(sp)	;move the place of the token to the destination
+			tst (sp)+			;pop the stack	
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			rts pc				;return back to the main		
+								;checking if in the current board there is a winning for the current player  		
+chkwinfs:	tst (sp)+			;pop the stack		
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			mov #Board, -(sp)   ;move the Board to the top of the stack
+			mov Player,-(sp)	;move the Player to the top of the stack	
+			jsr pc,checkWin		;checking if there is a winning situation at the start	
+			cmp (sp),#1			;check wins return 1 if there is a winning situation	
+			bne nowinsit		;if there is no winning situation prepare to the recursion
+			tst (sp)+			;pop the stack
+			;winning situation	
+	        jsr pc,fndtoken		;if there is a winning situation at the start we just look for a random token
+			mov #20,@10(sp)		;move 20 in to the wp - there is a winning 
+			mov (sp),@14(sp)	;move the place of the token to the source	
+			mov (sp),@12(sp)	;move the place of the token to the destination		
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			rts pc				;return to the main			
+nowinsit:	tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			mov #Board, -(sp)	;move the Board to the top of the stack
+			mov Steps, -(sp)	;move the Step to the top of the stack
+			mov Player, -(sp)	;move the Player to the top of the stack
+			mov #-21, -(sp)		;initial the wp of the first board situation to -21 - for taking the big wp
+			mov (sp),-(sp)		;save the wp twice like in the recursion
+			jsr pc,checkmov		;get in to the recursion and looking for a right move
+			mov (sp)+,@12(sp)	;move the final wp from the recursion to its address
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			rts pc				;return to the main
+			
+;fndtoken - gets a board and current player in stack and checking where there is the first 
+;token of the current player on the board
+;the function returns the first index on board in the stack
+;---------------------------------------------------------------------------------------------
+;|                                 	   	find token                                           |
+;---------------------------------------------------------------------------------------------	
+
+fndtoken:	mov r0,-(sp)		;will keep the register value
+			mov r1,-(sp)		;will keep the register value
+			mov r2,-(sp)		;will keep the register value
+			mov r3,-(sp)		;will keep the register value
+			clr r0 				;r0 will be the index to pass over the board
+			mov 14(sp),r1 		;r1 will hold the board address
+			mov 12(sp),r2		;r2 will hold the player to search for
+srchtokn:	add r0,r1			;add the index to the address board (twice - because it is a word)
+			add r0,r1			;add the index to the address board (twice - because it is a word)
+			cmp (r1),r2			;will search for same player
+			beq endtoken		;if finds - end function
+			mov 14(sp),r1 		;will reset the address of the board in r1
+			inc r0				;will increase the index in 1
+			br srchtokn			;will search again with the new index 			
+endtoken:	mov (sp)+ ,r3 		;will return r3 its original value 
+			mov (sp)+ ,r2 		;will return r2 its original value 
+			mov (sp)+ ,r1 		;will return r1 its original value 
+			mov 2(sp),-(sp)		;will keep the return address value in the top of stack
+			mov r0,4(sp)		;will keep the return value (index) in stack
+			mov 2(sp),r0 		;will return r0 its original value
+			mov (sp)+,(sp)		;will pop r0, and move return address value in the top of stack
+			
+			;inc/dec Playerhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+			rts pc
+	
+;checkmov- the recursive function the look for a right move.
+;gets in stack the board, step, current player, and wp.
+;the function updates the source and destination places and calculate the wp and pass it to its addresses				
+;---------------------------------------------------------------------------------------------
+;|                                          checkmov - RECURSIA                               |
+;---------------------------------------------------------------------------------------------	
+		
+checkmov:	
+			
+			mov r0,-(sp) 		;keep current value of r0 in the stack
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp) 		;keep current value of r3 in the stack
+			mov r4,-(sp) 		;keep current value of r4 in the stack
+		 				    	;Initialize registers
+			clr r0           	;the index of the board, passing all the squares in the board
+			clr r1	            ;will hold the diagonal squares
+			clr r2              ;for the division, the equation	(line)		
+			clr r3				;for the division, the reminder (column)
+			clr r4				;will be the address of the current place that pass over the board.
+			mov 24(sp),r4  		;move the pointer to the board to r4 
+			cmp 20(sp),#2    	;checking for which player the program needs to check number of moves
+			beq loop2mov	    ;if the number of player is 2 go to the loop for black player		
+								;if the number is not 2 (the number is 1) go to the loop for white player 		
+
+								
+
+;---------------------------------------------------------------------------------------------
+;|                                 	  		white move	                                      |
+;---------------------------------------------------------------------------------------------	
+
+loop1mov:  	clr r2				;clear the register	
+			clr r3				;clear the register
+			cmp (r4),#1			;checking if there is a white token in this place on the board
+			bne contmov1        ;if the square is not the player, continue to the next iteration
+			mov r0,r3    	  	;in order to continue to diversion action  
+			div #20,r2        	;in order to understand in which line in the board the current token is 
+			tst r2				;checking if the token is in the first line
+			beq contmov1        ;if r2 is zero it means that the token can't move
+								;checking for a right move
+								
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   right move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+								
+			cmp #16,r3			;checking if the token is in right column
+			beq ply1lmov        ;if the token is on the right side of the board, there is no right diagonal  
+			mov r4,r1			;prepare register 1 to hold the right diagonal
+			sub #16,r1        	;the place of the square in right diagonal
+			cmp (r1),#1			;checking if there is a 1 in the place on the board
+			beq ply1lmov      	;if in the square of the right diagonal there is a token with the same color, continue check the other diagonal
+			tst (r1)			;checking if there is a zero in this place on the board
+			beq add1rmov       	;if there is a zero int the diagonal, the step is ok 
+			cmp #14,r3        	;if the reminder is 14, there is no option to eat the enemy
+			beq ply1lmov
+			cmp #1,r2		  	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq ply1lmov			
+			sub #16,r1        	;the place of the 2nd right diagonal
+			tst (r1)
+			bne ply1lmov        ;if there is no zero in the 2nd right diagonal, there is no steps	
+add1rmov:   jsr pc,addmove
+	
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   left move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+ply1lmov:	cmp #0,r3
+			beq contmov1       	;if the token is on the left side of the board, there is no left diagonal
+			mov r4,r1			;prepare register 1 to hold the right 2nd diagonal
+			sub #22,r1        	;the place of the square in left diagonal
+			cmp (r1),#1
+			beq contmov1         ;if in the square of the left diagonal there is a token with the same color, continue to the next square
+			tst (r1)
+			beq add1lmov       	;if there is a zero in the diagonal, the step is ok 
+			cmp #2,r3         	;if the reminder is 2, there is no option to eat the enemy
+			beq contmov1
+			cmp #1,r2		  	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq contmov1
+			sub #22,r1        	;the place of the 2nd left diagonal
+			tst (r1)
+			bne contmov1      	;if there is no zero in the 2nd right diagonal, there is no steps	
+add1lmov:	jsr pc,addmove
+contmov1: 	add #2,r0			;promote the index
+			add #2,r4			;promote the place in the board
+			cmp r0,#200   		;the index got to the end of the board
+			bne loop1mov
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   end check move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+retrnrg1:	mov #Board,-(sp)	;move the board in to the top of the stack
+			mov #1,-(sp)		;move the player (white player)
+			jsr pc,NumMoves		
+			tst(sp)				;check if there is zero steps
+			bne bfchk1			;if its not zero moves, continue
+			tst (sp)+			;pop the stack
+			jsr pc,fndtoken
+			mov (sp),r4			;move the source to r4
+			mov (sp),r1			;move the destination to r1
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			add r4,r4			;its a word (2 bites)
+			add r1,r1			;its a word (2 bites)
+			add #Board,r4		;for the index on the board
+			add #Board,r1		;for the index on the board
+			jsr pc,addmove		
+			br endchk1			
+bfchk1:		tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+endchk1:	mov (sp)+,r4		;return the values to the registers
+			mov (sp)+,r3		;return the values to the registers
+			mov (sp)+,r2		;return the values to the registers
+			mov (sp)+,r1		;return the values to the registers
+			mov (sp)+,r0		;return the values to the registers
+			rts pc
+				
+;---------------------------------------------------------------------------------------------
+;|                                 	  		black move	                                      |
+;---------------------------------------------------------------------------------------------	
+	
+								;checking for a right move for a white token	
+loop2mov:  	clr r2				;clear the register	
+			clr r3				;clear the register	
+			cmp (r4),#2			;checking if there is a black token in this place on the board
+			bne contmov2       	;if the square is not the player, continue to the next iteration
+			mov r0,r3        	;in order to continue to diversion action  
+			div #20,r2       	;in order to understand in which line in the board the current token is 
+			cmp r2,#7			;checking if the token is in line 7		
+			beq contmov2       	;if r2 is zero it means that the token can't move
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   right move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+			cmp #16,r3			;checking if the token is in right column		
+			beq ply2lmov        ;if the token is on the right side of the board, there is no right diagonal  
+			mov r4,r1			;prepare register 1 to hold the right diagonal
+			add #22,r1       	;the place of the square in right diagonal
+			cmp (r1),#2
+			beq ply2lmov        ;if in the square of the right diagonal there is a token with the same color, continue check the other diagonal
+			tst (r1)
+			beq add2rmov      	;if there is a zero int the diagonal, the step is ok 
+			cmp #14,r3       	;if the reminder is 14, there is no option to eat the enemy
+			beq ply2lmov
+			cmp #6,r2		 	;if the quotient is 6(token's line), there is no option to eat the enemy
+			beq ply2lmov
+			add #22,r1       	;the place of the 2nd right diagonal
+			tst (r1)
+			bne ply2lmov       	;if there is no zero in the 2nd right diagonal, there is no steps
+add2rmov:	jsr pc,addmove
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   left move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+	
+ply2lmov:	cmp #0,r3
+			beq contmov2       	;if the token is on the left side of the board, there is no left diagonal
+			mov r4,r1
+			add #16,r1       	;the place of the square in left diagonal
+			cmp (r1),#2
+			beq contmov2       	;if in the square of the left diagonal there is a token with the same color, continue to the next square
+			tst (r1)
+			beq add2lmov      	;if there is a zero int the diagonal, the step is ok 
+			cmp #2,r3        	;if the reminder is 2, there is no option to eat the enemy
+			beq contmov2
+			cmp #6,r2		 	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq contmov2
+			add #16,r1       	;the place of the 2nd left diagonal
+			tst (r1)
+			bne contmov2       	;if there is no zero in the 2nd right diagonal, there is no steps	
+add2lmov:	jsr pc,addmove		;will increase by 1 the number of moves 		
+contmov2: 	add #2,r0			;promote the index
+			add #2,r4			;promote the place on the board
+			cmp r0,#200 		;the index got to the end of the board
+			bne loop2mov
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   end check move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			mov #Board,-(sp)	;move the board to the top of the stack
+			mov #2,-(sp)		;move the player (black player)
+			jsr pc,NumMoves
+			tst(sp)				;check if there is a zero steps
+			bne bfchk2			;if if its not zero moves, continue
+			tst (sp)+			;pop the stack
+			jsr pc,fndtoken
+			mov (sp),r4			;move the source to r4
+			mov (sp),r1			;move the destination to r1
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			add r4,r4			;its a word (2 bites)
+			add r1,r1			;its a word (2 bites)
+			add #Board,r4		;for the index on the board
+			add #Board,r1		;for the index on the board
+			jsr pc,addmove		
+			br endchk2
+bfchk2:		tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+endchk2:	mov (sp)+,r4		;return the values to the registers
+			mov (sp)+,r3		;return the values to the registers
+			mov (sp)+,r2		;return the values to the registers
+			mov (sp)+,r1		;return the values to the registers
+			mov (sp)+,r0		;return the values to the registers
+			rts pc
+						
+;---------------------------------------------------------------------------------------------
+;|                                 	  		add move                                          |
+;---------------------------------------------------------------------------------------------				
+						
+addmove:
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp) 		;keep current value of r3 in the stack
+			mov r4,-(sp) 		;keep current value of r4 in the stack
+			sub 36(sp),r4		;source in index
+			sub 36(sp),r1		;destination in index
+			clr r2				;before div
+			mov r4,r3			;move the address to r3 in order to div in 1 (to get the index from address in word)
+			div #2,r2			;get the index from word (double time the index)
+			mov r2,r4			;move the index to r4 (source)
+			clr r2				;before div again
+			mov r1,r3			;same as in r4 
+			div #2,r2			;get the index from word (double time the index)
+			mov r2,r1			;saving the index in r1 (destination)
+			mov r4,-(sp)		;passing the source place to the stack
+			mov r1, -(sp)		;passing the destination place to the stack
+            mov r4,source1		;initial the source place before change it. 
+			mov r1,dest1		;initial the destination place before change it.
+			mov 4(sp),r4		;get back r4 original value
+			mov 6(sp),r3		;get back r3 original value
+			mov 10(sp),r2		;get back r2 original value
+			mov 12(sp),r1		;get back r1 original value
+			mov (sp)+,6(sp)		;move the destination place that will be after pop everything in the top of the stack
+			mov (sp)+,6(sp)		;move the source place that will be after pop everything in the 2nd place of the stack
+			tst (sp)+			;pop irrelevant information
+			tst (sp)+			;pop irrelevant information
+			mov 32(sp),-(sp)	;move board address to the top of the stack  
+			jsr r5,movPiece		;calls the function that change the board to the right move. 
+source1:	.word 0				;initial the source1
+dest1:		.word 0				;initial the dest1
+
+;---------------------------------------------------------------------------------------------
+;|                                 	  		   step                                           |
+;---------------------------------------------------------------------------------------------	
+
+			mov 32(sp),-(sp)    ;bring the step to the top of the stack
+			dec (sp)			;decries the step by 1
+			mov r4,-(sp)		;we are about to use MinOrmax that returns r4
+			cmp 34(sp),#1       ;checking who is the current player
+			beq curplyr 		;change player for the next recursive
+			mov #1,-(sp)		;if the previous player was 2, the current is 1 
+			br mvaddplr			;moving the address of the Player to the top of the stack
+curplyr:	mov #2, -(sp) 		;if the previous player was 1, the current is 2
+mvaddplr:	mov #Player,-(sp)	;moving the address of the Player to the top of the stack
+			jsr pc,minOrMax		;checking if we need min or max step
+			cmp r4,#1			;if in r4 there is 1 we look for the max
+			bne intialwp		;initial the wp respectively for the minOrMax wp  
+			mov #-21,(sp)		;in r4 there is 1 so we look for the max wp so 21 in the top of the stack
+			br returnr4			;return the value to register 4
+intialwp:	mov #21,(sp)		;in r4 there is -1 so we look for the min wp so -21 in the top of the stack
+returnr4:	mov 4(sp),r4		;return r4 value
+			mov 2(sp),4(sp)		;pop the stack and move the values from the top of the stack to a lower place` 
+			mov (sp)+,(sp)		;pop the stack
+			mov(sp),-(sp)		
+			
+;---------------------------------------------------------------------------------------------
+;|                                 	  		conditions                                        |
+;---------------------------------------------------------------------------------------------	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  condition 1 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+								;checking the conditions for stopping the recursive:
+cond1:							;condition1 - checking if there is no more moves to both of the players
+			mov #Board,-(sp)    ;move the board to the top of the stack
+			mov #1,-(sp)		;move player 1 to the top of the stack
+			jsr pc,NumMoves		;calculate its moves
+			cmp (sp),0			;checking if player 1 has 0 moves
+			bne cond2			;if there is no 0 moves, continue to check other stop conditions 
+			tst (sp)+			;pop the stack
+			mov #2,(sp)			;move player 2 to the top of the stack
+			jsr pc,NumMoves		;calculate its moves
+			cmp (sp),0			;checking if player 1 has 0 moves	
+			bne cond2			;if there is no 0 moves, continue to check other stop conditions 
+			tst(sp)+			;pop the stack			
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			br clccurwp			;back from the recursion
+	
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  condition 2 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+								;continue to check stop conditions
+cond2:							;condition 2 - checking if the step is zero
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst 6(sp)			;check if the the step is 0
+			beq clccurwp		;if it 0 we want to stop the recursion
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  condition 3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+								;condition 3 - checking if the Player won
+			mov 10(sp),-(sp)	;move the board in to the top of the stack
+			mov Player,-(sp)	;move the Player in to the top of the stack
+			jsr pc,checkWin		;checks if the Player won
+			cmp #1,(sp)			;checkWin returns value in the top of the stack. if it 1- there is a winning
+			beq backrec		    ;if there is a winning we want to stop the recursion 
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			jsr pc,checkmov   	;checking the next move  
+			br bcknowp
+			
+;---------------------------------------------------------------------------------------------
+;|                                 	 	back from recursion                                   |
+;---------------------------------------------------------------------------------------------	
+
+backrec:	tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+			tst (sp)+			;pop the stack
+	
+clccurwp:	mov r4,-(sp)		;we are about to use calcWP that returns in r4
+			mov 12(sp),-(sp)    ;move the board to the front of the stack
+			mov Player,-(sp)	;move the current player to the front of the stack
+			jsr pc,calcWP		;calculate the wp
+			tst (sp)+			;pop the stack
+			mov r4,(sp)			;move the current wp to the stack
+			mov 2(sp),r4		;return r4 value back to the register 
+			mov (sp)+,2(sp)
+			tst(sp)+			;pop the stack
+bcknowp:	cmp 36(sp),0		;check if the wp of the father is negative or positive
+			bmi takemax			;if its negative we need to take the biggest wp
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  take minimum wp ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			cmp (sp),34(sp)		;check who's wp is the higher
+			bpl chilbig1		;if its positive the child wp is higher	
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  dad is bigger ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+			mov (sp),34(sp)		;move the child wp to the farther wp
+			cmp Steps,42(sp)		;check if the previous step is the Step to setup the source and destination 
+			bne endrecur		;end the recursion
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  update destination and source ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			mov 14(sp),@54(sp)	;setup the source			
+			mov 12(sp),@52(sp)	;setup the destination
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  child is bigger ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+chilbig1:	br endrecur			;end the recursion
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  take maximum wp ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+takemax:	cmp (sp),34(sp)		;check who's wp is the higher	
+			bmi dadbig2			;if its negative the dad wp is higher
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  child is bigger ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			mov (sp),34(sp)		;move child wp to father wp 
+			cmp Steps,42(sp)		;check if the previous step is the Step to setup the source and destination 
+			bne endrecur		;end the recursion
+			mov 14(sp),@54(sp)	;setup the source			
+			mov 12(sp),@52(sp) 	;setup the destination
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  dad is bigger  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+dadbig2:	br endrecur			;end the recursion
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ end recursion ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+endrecur:   tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			mov 4(sp),dest3		;setup the destination
+			mov 2(sp),source3	;setup the source
+			jsr r5,movPiece		;calls the function that change the board to the right move. 
+source3:	.word 0				;initial the source3
+dest3:		.word 0				;initial the dest3
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			tst(sp)+			;pop the stack
+			rts pc
+				
+;gets a number of player and a player we need to calculate what is the best step for it, and 
+;checking if in this case we are looking for the best move or for the worst.
+;the parameters are moved in stack 
+;register r4 - if we look for the maximum move the register returns 1, if we look for minimum move the register returns -1.		
+;---------------------------------------------------------------------------------------------
+;|                                 	  		minOrMax                                          |
+;---------------------------------------------------------------------------------------------	
+
+minOrMax: 
+			cmp @2(sp),4(sp)  ;checking if the current player is the player for it we need to check the moves.  
+			beq max           ;if its the maximum move
+			mov #-1.,r4       ;register 4 returns -1
+			rts pc			  ;back to the place we calLd to the function.
+max: 		mov #1,r4         ;register 4 returns 1
+			rts pc			  ;back to the place we calLd to the function.
+
 ;movPiece - will update a current board by moving a token from one place to other (given places).
-;r5 will hold (move parameter inline) the address of source and destination of the token.
+;r5 will hold (move parameter inline) the address of source and destination of the token.			
+;---------------------------------------------------------------------------------------------
+;|                                 	  		movPiece                                          |
+;---------------------------------------------------------------------------------------------				
+			
 movPiece: 	mov r0,-(sp) 		;keep current value of r0 in the stack
 			mov r1,-(sp) 		;keep current value of r1 in the stack
 			mov r2,-(sp) 		;keep current value of r2 in the stack
@@ -941,25 +1558,368 @@ endMovPiece:mov (sp)+,r4
 			mov (sp)+,r2
 			mov (sp)+,r1
 			mov (sp)+,r0
-			rts r5	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;			
+			rts r5			
+		
+;calcWP - gets the current board and the player that his turn is now and calculates WP for the current player
+;the parameters are enter in the stack
+;the WP is return in r4 
+;---------------------------------------------------------------------------------------------
+;|                                 	  		calcWP                                            |
+;---------------------------------------------------------------------------------------------	
+
+calcWP: 	mov r0,-(sp) 		;keep current value of r0 in the stack
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp) 		;keep current value of r3 in the stack
+			clr r0 				;initialize register, the register will hold the index to pass over the board
+			clr r1		 		;initialize register, the register will hold the number of white tokens
+			clr r2 				;initialize register, the register will hold the number of black tokens
+			clr r3 				;initialize register, will hold the address of the board
+			clr r4 				;initialize register to return
+			mov 14(sp), r3 		;the address of the beginning of board will be in r3
+			jsr pc,calcW	  
+			clr r0 				;initialize before counting again with the index
+			mov 14(sp), r3 		;the address of the beginning of board will be in r3
+			jsr pc, calcB  
+			mov 14(sp),-(sp)    ;before sent it to check win function
+			mov 14(sp),-(sp)	;before sent it to check win function
+			cmp #1,(sp) 		;(sp) contains the number of the player who his turn is now
+			bne clcblWP 		;if sp contains 2 we want to continue to the calculate the WP of player 2
+								;else - continue to calculate the WP of player 1
+								
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ calculate white wp ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+										
+								;white player - calculate his WP	
+			jsr pc, checkWin 	;send the board and the player in the stack and return 1 if white wins.
+			cmp #1,(sp) 		;will be equal if the white is in absolute winning situation 
+			beq white_wins
+			tst (sp)+			;will remove the return value from checkWin
+			mov #2, (sp) 		;will change the player in the stack in order to check if the adversary wins.
+			jsr pc, checkWin 	;check if the black wins
+			cmp #1,(sp) 		;will be equal if the black is in absolute winning situation 
+			beq white_lose
+			sub r2, r1 			;the calculation of the WP of the white player
+			mov r1, r4 			;put the WP in register 4
+			br EndClcWP 		;go to end label after finish calculate and update of register 4 
+white_wins: mov #20, r4 		;the WP of winning
+			br EndClcWP 		;go to end label after finish calculate and update of register 4
+white_lose: mov #-20, r4
+			br EndClcWP 		;go to end label after finish calculate and update of register 4
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ calculate black wp ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+						
+clcblWP:						;black player - calculate his WP 						
+			jsr pc, checkWin 	;send the board and the player in the stack and return 1 if black wins.
+			cmp #1,(sp) 		;will be equal if the black is in absolute winning situation 
+			beq black_wins 
+			tst (sp)+			;will remove the return value from checkWin
+			mov #1, (sp) 		;will change the player in the stack in order to check if the adversary wins.
+			jsr pc, checkWin 	;check if the white wins
+			cmp #1,(sp) 		;will be equal if the white is in absolute winning situation 
+			beq black_lose
+			sub r1, r2 			;the calculation of the WP of the black player
+			mov r2, r4 			;put the WP in register 4
+			br EndClcWP 		;go to end label after finish calculate and update of register 4
+black_wins: mov #20, r4 		;the WP of winning
+			br EndClcWP 		;go to end label after finish calculate and update of register 4
+black_lose: mov #-20, r4;
+			br EndClcWP 		;go to end label after finish calculate and update of register 4
+EndClcWP: 	tst (sp)+			;will remove the number 1/-1 (from the checkWin function) from the top of the stack
+			tst (sp)+			;will remove the copy of the current player
+			tst (sp)+			;will remove the copy of the current board
+			mov (sp)+, r3		;will return the value of the registers back as before using the function and will finish the function
+			mov (sp)+, r2		;and will pop the registers from the stack in order to left the return address at top
+			mov (sp)+, r1
+			mov (sp)+, r0
+			rts pc 				;go back to the calling function 
+	
+;checkWin-the function checking if there is a winning to the current player.
+;gets in stack the board and current player and returns in stack 1 - if there is a winning for the current player
+;and -1 - if there is no winning for this player.
+;---------------------------------------------------------------------------------------------
+;|                                 	  		checkWin                                          |
+;---------------------------------------------------------------------------------------------	
+		
+checkWin:
+			mov r0,-(sp) 		;keep current value of r0 in the stack
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp) 		;keep current value of r3 in the stack
+			clr r0 				;initialize register, the register will hold the index to pass over the board
+			clr r1		 		;initialize register, the register will hold the number of white tokens
+			clr r2 				;initialize register, the register will hold the number of black tokens
+			clr r3 				;initialize register, will hold the address of the board
+			mov 14(sp), r3 		;the address of the beginning of board will be in r3
+			jsr pc, calcW	  
+			clr r0 				;initialize before counting again with the index
+			mov 14(sp), r3 		;the address of the beginning of board will be back in r3 after change it in the last function
+			jsr pc, calcB  
+			cmp #1, 12(sp) 		;12(sp) contains the number of the player who we need to check
+			bne chkwinbl
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking if the white token won~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+								;current player is white 
+			mov 14(sp),-(sp)    ;will move the board address to the top of the stack
+			mov 14(sp),-(sp)	;will move the player to the top of the stack
+			tst r2				;check the number of the tokens of the enemy
+			beq endWin			;if the number is zero it means that the white wins
+			jsr pc, NumMoves	;counting number of moves to the current player 
+			tst (sp) 			;will check if the number of moves (which returns on the top of the stack) is not zero
+			bne endLose
+			tst(sp)+			;will pop the number of moves which returned from the NumMoves
+			mov #2, (sp)		;in order to check enemy's number of moves
+			jsr pc, NumMoves	;counting number of moves to the enemy player
+			tst (sp) 			;will check if the number of moves of the enemy (which returns on the top of the stack) is not zero
+			bne endLose			
+			cmp r1,r2 			;both of the players have zero moves, check who have more tokens
+			bgt befWin			;white have more tokens
+			br endLose			;black have more tokens
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking if the black token won~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+chkwinbl: 						;current player is black
+			mov 14(sp),-(sp)    ;will move the board address to the top of the stack
+			mov 14(sp),-(sp)	;will move the player to the top of the stack 						
+			tst r1				;check the number of the tokens of the enemy
+			beq endWin			;if the number is zero it means that the black wins
+			jsr pc, NumMoves	;counting number of moves to the current player 
+			tst (sp) 			;will check if the number of moves (which returns on the top of the stack) is not zero
+			bne endLose
+			tst(sp)+			;will pop the number of moves which returned from the NumMoves
+			mov #1,(sp)		    ;in order to check enemy's number of moves
+			jsr pc, NumMoves	;counting number of moves to the enemy player 
+			tst (sp) 			;will check if the number of moves of the enemy (which returns on the top of the stack) is not zero
+			bne endLose			
+			cmp r2,r1 			;both of the players have zero moves, check who have more tokens
+			bgt befWin			;black have more tokens
+			br endLose			;white have more tokens			
+befWin:		tst (sp)+			;will pop the number of moves which returned from the NumMoves
+endWin:		tst (sp)+			;will pop the player number
+			tst (sp)+			;will pop the board address
+			mov (sp)+, r3		;will return the registers their original value 
+			mov (sp)+, r2		;and will pop the registers from the stack in order to left the return address at top
+			mov (sp)+, r1
+			mov (sp)+, r0
+			mov (sp), -(sp) 	;will copy the return address to the top of the stack
+			mov #1, 2(sp) 		;will keep the 1 (means winning) in the stack (under the return address)
+			rts pc
+endLose:	tst (sp)+			;will pop the number of moves which returned from the NumMoves
+			tst (sp)+			;will pop the player number
+			tst (sp)+			;will pop the board address
+			mov (sp)+, r3		;will return the registers their original value 
+			mov (sp)+, r2		;and will pop the registers from the stack in order to left the return address at top
+			mov (sp)+, r1
+			mov (sp)+, r0
+			mov (sp), -(sp) 	;will copy the return address to the top of the stack
+			mov #-1., 2(sp) 	;will keep the -1 (means losing) in the stack (under the return address)
+			rts pc
+			
+;NumMoves - calculate the number of moves that a current player has in a current given board
+;gets a current board and a current player in stack and return the number of moves in stack
+;will return the number of moves in the stack
+;---------------------------------------------------------------------------------------------
+;|                                 	  		NumMoves                                          |
+;---------------------------------------------------------------------------------------------	
+
+NumMoves:						
+			mov r0,-(sp) 		;keep current value of r0 in the stack
+			mov r1,-(sp) 		;keep current value of r1 in the stack
+			mov r2,-(sp) 		;keep current value of r2 in the stack
+			mov r3,-(sp) 		;keep current value of r3 in the stack
+			mov r4,-(sp) 		;keep current value of r4 in the stack
+			mov r5,-(sp) 		;keep current value of r5 in the stack
+								;Initialize registers
+			clr r0           	;the index of the board, passing all the squares in the board
+			clr r1	            ;will hold the diagonal squares
+			clr r2              ;for the division, the equation			
+			clr r3				;for the division, the reminder
+			clr r4				;will be the address of the current place that pass over the board.
+			clr r5				;will hold the total number of moves
+			mov 20(sp),r4  		;move the pointer to the board to r4 
+			cmp 16(sp),#2    	;checking for which player the program needs to check number of moves
+			beq BlNumMov		;if the number of player is 2 go to the loop for black player		
+								;if the number is not 2 (the number is 1) go to the loop for white player 
+								
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~counting white number of moves~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+								;loop for the white player, the loop passing over the board and checking where there is
+								;white player,and for each token how much moves there are for each.
+								;all the moves for each token is summed.   					
+loop1:  	clr r2
+			clr r3
+			cmp (r4),#1
+			bne contu1        	;if the square is not the player, continue to the next iteration
+			mov r0,r3    	  	;in order to continue to diversion action  
+			div #20,r2        	;in order to understand in which line in the board the current token is 
+			tst r2
+			beq contu1        	;if r2 is zero it means that the token can't move
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking right diagonal~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+			cmp #16,r3
+			beq ply1l         	;if the token is on the right side of the board, there is no right diagonal  
+			mov r4,r1
+			sub #16,r1        	;the place of the square in right diagonal
+			cmp (r1),#1
+			beq ply1l         	;if in the square of the right diagonal there is a token with the same color, continue check the other diagonal
+			tst (r1)
+			beq addmve1       	;if there is a zero int the diagonal, the step is ok 
+			cmp #14,r3        	;if the reminder is 14, there is no option to eat the enemy
+			beq ply1l
+			cmp #1,r2		  	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq ply1l			
+			sub #16,r1        	;the place of the 2nd right diagonal
+			tst (r1)
+			bne ply1l         	;if there is no zero in the 2nd right diagonal, there is no steps
+addmve1:	inc r5				;will increase by 1 the number of moves 
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking left diagonal~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+ply1l:		cmp #0,r3
+			beq contu1       	;if the token is on the left side of the board, there is no left diagonal
+			mov r4,r1
+			sub #22,r1        	;the place of the square in left diagonal
+			cmp (r1),#1
+			beq contu1        	;if in the square of the left diagonal there is a token with the same color, continue to the next square
+			tst (r1)
+			beq addmve2       	;if there is a zero int the diagonal, the step is ok 
+			cmp #2,r3         	;if the reminder is 2, there is no option to eat the enemy
+			beq contu1
+			cmp #1,r2		  	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq contu1
+			sub #22,r1        	;the place of the 2nd left diagonal
+			tst (r1)
+			bne contu1        	;if there is no zero in the 2nd right diagonal, there is no steps	
+addmve2:	inc r5				;will increase by 1 the number of moves 		
+contu1: 	add #2,r0
+			add #2,r4
+			cmp r0,#200   
+			bne loop1
+			br endNumMoves
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~counting black number of moves~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
+BlNumMov:						;loop for the black player, the loop passing over the board and checking where there is black player,
+								;and for each token how much moves there are for each.
+								;all the moves for each token is summed. 	
+loop2:  	clr r2
+			clr r3
+			cmp (r4),#2
+			bne contu2       	;if the square is not the player, continue to the next iteration
+			mov r0,r3        	;in order to continue to diversion action  
+			div #20,r2       	;in order to understand in which line in the board the current token is 
+			cmp r2,#7
+			beq contu2       	;if r2 is zero it means that the token can't move
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking right diagonal~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+			cmp #16,r3
+			beq ply2l        	;if the token is on the right side of the board, there is no right diagonal  
+			mov r4,r1
+			add #22,r1       	;the place of the square in right diagonal
+			cmp (r1),#2
+			beq ply2l        	;if in the square of the right diagonal there is a token with the same color, continue check the other diagonal
+			tst (r1)
+			beq addmve3      	;if there is a zero int the diagonal, the step is ok 
+			cmp #14,r3       	;if the reminder is 14, there is no option to eat the enemy
+			beq ply2l
+			cmp #6,r2		 	;if the quotient is 6(token's line), there is no option to eat the enemy
+			beq ply2l
+			add #22,r1       	;the place of the 2nd right diagonal
+			tst (r1)
+			bne ply2l        	;if there is no zero in the 2nd right diagonal, there is no steps
+addmve3:	inc r5				;will increase by 1 the number of moves
+ 
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~checking left diagonal~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     
+ply2l:		cmp #0,r3
+			beq contu2       	;if the token is on the left side of the board, there is no left diagonal
+			mov r4,r1
+			add #16,r1       	;the place of the square in left diagonal
+			cmp (r1),#2
+			beq contu2       	;if in the square of the left diagonal there is a token with the same color, continue to the next square
+			tst (r1)
+			beq addmve4      	;if there is a zero int the diagonal, the step is ok 
+			cmp #2,r3        	;if the reminder is 2, there is no option to eat the enemy
+			beq contu2
+			cmp #6,r2		 	;if the quotient is 1(token's line), there is no option to eat the enemy
+			beq contu2
+			add #16,r1       	;the place of the 2nd left diagonal
+			tst (r1)
+			bne contu2       	;if there is no zero in the 2nd right diagonal, there is no steps	
+addmve4:	inc r5				;will increase by 1 the number of moves 		
+contu2: 	add #2,r0
+			add #2,r4
+			cmp r0,#200 
+			bne loop2
+			br endNumMoves			
+endNumMoves:clr r0
+			mov r5,r0			;will keep the number of moves in r0	
+			mov (sp)+, r5		;will return the value of the registers back as before using the function and will
+			mov (sp)+, r4		;finish the function and will pop the registers from the stack in order 
+			mov (sp)+, r3		;to left the return address at top
+			mov (sp)+, r2
+			mov (sp)+, r1
+			mov (sp), -(sp)		;will move original value of r0 1 up 
+			mov 4(sp),2(sp)		;will move the return address one up 
+			mov r0,4(sp)		;will put the number of moves 3id in order to go back when it is on the top of the stack
+			mov (sp)+, r0		;will return r0 its original value
+			rts pc	
 				
+;calcW - calculates the number of white tokens on the board 
+;r3 - holds the pointer to the beginning of the current board (move parameter in register)
+;r0 - will hold the index to pass over the board (the register need to be cleared before calling the function)
+;r1 - will hold the number of white tokens in the end of the function (the register need to be cleared before calling the function)
+;---------------------------------------------------------------------------------------------
+;|                                 	  		calcW                                             |
+;---------------------------------------------------------------------------------------------
+
+calcW: 
+			cmp (r3),#1 		;search for white token
+			bne cont1 			;pass on increasing number of white tokens
+			inc r1 				;increase in 1 the number of white tokens if equal
+cont1:		add #2, r3
+			inc r0 				;will count the number of squars we passed
+			cmp r0, #100 		;reached to the end of board
+			beq endCal1 		;end function
+			br calcW 			;continue to next square		
+endCal1: 	rts pc 				;return after calculate the number of white token on board 
+
+;calcB - calculates the number of black tokens on the board 
+;r3 - holds the pointer to the beginning of the current board (move parameter in register)
+;r0 - will hold the index to pass over the board - (the register need to be cleared before calling the function)
+;r2 - will hold the number of black tokens in the end of the function (the register need to be cleared before calling the function)
+;---------------------------------------------------------------------------------------------
+;|                                 	  		calcB                                             |
+;---------------------------------------------------------------------------------------------
+
+calcB:
+			cmp (r3),#2 		;search for black token
+			bne cont2 			;pass on increasing number of black tokens
+			inc r2 				;increase in 1 the number of black tokens if equal
+cont2:		add #2, r3
+			inc r0 				;will count the number of squares we passed
+			cmp r0, #100 		;reached to the end of board
+			beq endCal2			;end function
+			br calcB			;continue to next square
+endCal2: 	rts pc 				;return after calculate
+
 			
 			
 
+. = torg + 15000
 
-. = torg + 10000
-
-Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
-			.word	2,	0,	2,	0,	2,	0,	2,	0
-			.word	0,	2,	0,	2,	0,	2,	0,	2
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	1,	0,	1,	0,	1,	0,	1,	0
-			.word	0,	1,	0,	1,	0,	1,	0,	1
-			.word	1,	0,	1,	0,	1,	0,	1,	0
+;Board:		.word	0,	1,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	2
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
 			
-. = torg + 11000
+. = torg + 15500
 
 wordbord:	.ascii<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
 			.even
@@ -1035,15 +1995,28 @@ timenum1:	.blkw 16
 timenum2:	.blkw 16
 num1:		.word 0 
 num2: 		.word 0	
-currplr:    .word 0
+Player:     .word 1
 counter3:	.word 0					;counter3 to number board change
 counter4:	.word 0					;counter4 to number board change
 countrst:	.word 0
 countsec:	.word 0
+<<<<<<< HEAD
 countoct:	.word 0 				;counter to the function which changes from octal to decimal number 
+=======
+Steps:      .word 0
+countoct:   .word 0
+>>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
 
 
 
+Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	2,	0,	2,	0,	2,	0,	2,	0
+			.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	1,	0,	1,	0,	1,	0,	1,	0
+			.word	0,	1,	0,	1,	0,	1,	0,	1
+			.word	1,	0,	1,	0,	1,	0,	1,	0
 
 
 . = torg + 20000	
