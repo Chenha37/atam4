@@ -960,12 +960,12 @@ nowinsit:	tst (sp)+			;pop the stack
 			mov (sp),-(sp)		;save the wp twice like in the recursion
 			jsr pc,checkmov		;get in to the recursion and looking for a right move
 			mov (sp)+,@12(sp)	;move the final wp from the recursion to its address
+			;check if time is over hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
 			tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
 			rts pc				;return to the main
 			
-
 ;---------------------------------------------------------------------------------------------
 ;|                                 	   	find token                                           |
 ;---------------------------------------------------------------------------------------------	
@@ -1940,6 +1940,8 @@ countsec:	.word 0
 Steps:      .word 0
 countoct:   .word 0
 isprint:    .word 0
+timeout:	.word 0
+WP:			.word 0
 
 . = torg + 20000	
 rate: .word 1000.
