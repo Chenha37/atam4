@@ -14,7 +14,7 @@ LEN7 = 5		;length of word "with "
 LEN8 = 23		;length of word "seconds per move"
 LEN9 = 25		;length of word "Board layout:"
 LEN10 = 120 	;length of board
-LEN11 = 14 		;length of "seconds."
+LEN11 = 15 		;length of " seconds."
 LEN12 = 6 		;length of "Human" 
 LEN13 = 20		;length of "Current Player: "
 LEN14 = 2
@@ -665,10 +665,7 @@ contprt:	mov #timemsg, -(sp)
 			add #4,sp	
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			
-			mov countsec, -(sp)
-			mov #1, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
+			jsr pc, octTodec
 			
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #secmsg, -(sp)
@@ -720,6 +717,53 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			mov 2(sp), counter1		;counter1 will hold the number of chars to print
 			iot
 			rts pc 
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print octal in decimal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+octTodec: 	mov r2, -(sp)			;keep the original value of r2
+			mov r3, -(sp)			;keep the original value of r3
+			clr r2					;clear r2 before use to div
+			clr r3					;clear r3 before use to div
+			mov countrst, r3 		;move the reminder of the time to r3 before div
+			div #12, r2 			;div in 12 (10 in decimal)
+			mov r2,r3 
+			clr r2 
+			div #12, r2 
+			add #60, r2				;r2 will hold the 10th second of the reminder, change it to the ascii value
+			mov r2, -(sp)
+			mov #'., -(sp)			
+			clr r2
+			clr countoct			;use to know how many numbers to print  
+			clr r3					;r3 will keep the reminder in each diversion 
+			mov countsec, r3 		;move the seconds that passed to r3 before div
+divsec:							
+			div #12, r2				;to move to decimal number 
+			add #60,r3 
+			mov r3,-(sp)
+			inc countoct
+			mov r2, r3 
+			clr r2 
+			cmp r3, #12 			;check if we need to continue diverting 
+			bge divsec				;if the number in r2 is bigger or equal to 12 (10) - keep diverting
+			add #60, r3				;transfer to ascii value
+			mov r3, -(sp)			;put the first number to print in the stack (LIFO)
+			add #3,countoct			;number of chars to print with the first and last number and the point (.)
+			
+			;;print the number from sp
+printoct:	tst countoct
+			beq endoctal
+			movb (sp),numbrmsg
+			mov #numbrmsg,-(sp)
+			mov #1,-(sp)			;the length to print 
+			jsr pc, printMsg
+			add #6,sp 			;will pop the first number to print and its length(1)
+			dec countoct			;after print it, number of chars to print is decreased in 1
+			br printoct
+			
+endoctal:	mov (sp)+, r3
+			mov (sp)+, r2 
+			rts pc 					;go back 
+			
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
 ;---------------------------------------------------------------------------------------------
@@ -962,13 +1006,16 @@ errormsg:	.ascii<\r\nCannot execute ">
 timemsg:	.ascii<move took >	
 			.even
 			
-secmsg:		.ascii<seconds.\r\n\r\n>	
+secmsg:		.ascii< seconds.\r\n\r\n>	
 			.even
 			
 entermsg:	.ascii<\r\n>	
 			.even
 			
 parnmsg:	.ascii<">	
+			.even
+			
+numbrmsg:	.ascii<.>	
 			.even
 
 indxarr: 	.word 0 				;initialize number of chars in the array
@@ -993,6 +1040,7 @@ counter3:	.word 0					;counter3 to number board change
 counter4:	.word 0					;counter4 to number board change
 countrst:	.word 0
 countsec:	.word 0
+countoct:	.word 0 				;counter to the function which changes from octal to decimal number 
 
 
 
