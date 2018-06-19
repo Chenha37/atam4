@@ -53,8 +53,6 @@ waiting:	wait
 			jmp checkinp
 			;print the end message out of time use flag currplr
 			halt
-			
-			
 ;---------------------------------------------------------------------------------------------
 ;|                                 checking if the input is legal                            |
 ;---------------------------------------------------------------------------------------------	
@@ -469,13 +467,8 @@ start:
 			add #4,sp				;pop to the message and to the length
 			
 			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp1			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp1
-itscomp1:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp1:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc, printwho
+			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)
 			mov #LEN7, -(sp)		;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
@@ -507,13 +500,8 @@ pascomp1:	jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp2			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp2
-itscomp2:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp2:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc,printwho
+			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)
 			mov #LEN7, -(sp)
@@ -605,13 +593,8 @@ whitetrn:	;;;;;;;;sentences
 			add #4,sp				;pop to the message and to the length
  
 			mov type1, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp5			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp5
-itscomp5:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp5:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc, printwho
+			add #2,sp				;pop to the message (type)
  
 			bis #100,cls
 			inc currplr
@@ -631,13 +614,8 @@ blacktrn:	;;;;sentences for current player
 			add #4,sp				;pop to the message and to the length
 			
 			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp6			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp6
-itscomp6:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp6:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc, printwho		;go to print Computer or Human 
+			add #2,sp				;pop to the message and to the length
 			
 			bis #100,cls
 			dec currplr
@@ -657,8 +635,7 @@ src:		.word 0
 dest:		.word 0	
 			tst (sp)+
 			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			;print time took message
+			;~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~
 			jsr pc, linedrop
 			cmp currplr,#0		;check who is the player to print 
 			beq blackprt		
@@ -669,13 +646,8 @@ whiteprt:	mov #whitemsg, -(sp)
 			add #4,sp	
 			
 			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp3			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp3
-itscomp3:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp3:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc, printwho
+			add #2,sp				;pop to the message (the type)
 			br contprt
 			
 blackprt:	mov #blackmsg, -(sp)
@@ -684,13 +656,8 @@ blackprt:	mov #blackmsg, -(sp)
 			add #4,sp
 			
 			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			cmpb #'C, @(sp)			
-			beq itscomp4			;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
-			br pascomp4
-itscomp4:	mov #LEN6, -(sp)		;length of "Computer"
-pascomp4:	jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
+			jsr pc, printwho
+			add #2,sp				;pop to the message (type)
 
 contprt:	mov #timemsg, -(sp)
 			mov #LEN5, -(sp)		
@@ -712,9 +679,8 @@ contprt:	mov #timemsg, -(sp)
 busy_w5:	tstb @#tps 
 			bpl busy_w5
 			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			clr countsec
-			clr countrst
+			clr countsec		;initialization before using the clock again
+			clr countrst		;initialization before using the clock again
 			clr counter3
 			clr counter4
 		
@@ -723,12 +689,30 @@ busy_w5:	tstb @#tps
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print a line drop (enter) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 linedrop:	mov #entermsg, -(sp)
 			mov #2, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 			rts pc 		
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print a current player ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
+printwho:	mov 2(sp),-(sp) 		;copy the type to the top of the stack 
+			cmpb #'C, @(sp)			
+			beq itscomp				;check if the player that was entered is computer or human to print 
+			mov #LEN12, -(sp)		;length of "Human" 
+			br pascomp
+itscomp:	mov #LEN6, -(sp)		;length of "Computer"
+pascomp:	jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			rts pc 
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;print a message of the data it gets in the stack (ascii array to print ant its length) 
 printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			bgt printMsg			;if the printer is busy - wait (by loop back to printMsg)
 			mov #1, busy			;turn on the busy flag 
@@ -736,7 +720,6 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			mov 2(sp), counter1		;counter1 will hold the number of chars to print
 			iot
 			rts pc 
-
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
 ;---------------------------------------------------------------------------------------------
