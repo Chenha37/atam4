@@ -14,7 +14,7 @@ LEN7 = 5		;length of word "with "
 LEN8 = 23		;length of word "seconds per move"
 LEN9 = 25		;length of word "Board layout:"
 LEN10 = 120 	;length of board
-LEN11 = 14 		;length of "seconds."
+LEN11 = 15 		;length of " seconds."
 LEN12 = 6 		;length of "Human" 
 LEN13 = 20		;length of "Current Player: "
 LEN14 = 2
@@ -51,14 +51,16 @@ prdollar:  	mov #dollar, -(sp)
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
-			;print the end message out of time use flag current plr
+			;print the end message out of time use flag current player
 			halt
 ;---------------------------------------------------------------------------------------------
 ;|                                 checking if the input is legal                            |
 ;---------------------------------------------------------------------------------------------	
-checkinp:
-			mov #array,-(sp)
-			cmp #'s,@(sp)
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is start ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+checkinp:   mov #array,-(sp)	;check if the command is start
+			cmp #'s,@(sp)			
 			bne check2
 			add #2,(sp)
 			cmp #'t,@(sp)
@@ -75,10 +77,13 @@ checkinp:
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
-			cmp startgm,0
+			cmp startgm,#0		;check if the game already started
 			bne error
-			br chkstart			
-check2:     tst (sp)+
+			jmp chkstart	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is move ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+check2:     tst (sp)+			;check if the command is move 
 		    mov #array,-(sp)
 			cmp #'m,@(sp)
 			bne check3
@@ -94,10 +99,13 @@ check2:     tst (sp)+
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
-			cmp #1,startgm
+			cmp #1,startgm		;check if the game already started
 			bne error
-			jmp chkmove						
-check3:		tst (sp)+
+			jmp chkmove	
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is stop ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+check3:		tst (sp)+			;check if the command is stop
 		    mov #array,-(sp)
 			cmp #'s,@(sp)
 			bne check4
@@ -110,9 +118,14 @@ check3:		tst (sp)+
 			add #2,(sp)
 			cmp #'p,@(sp)
 			bne check4
+			cmp #1,startgm		;check if the game already started
+			bne error
 			tst (sp)+
 			jmp stop
-			check4:		tst (sp)+
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is time ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+check4:		tst (sp)+			;check if the command is stop
 		    mov #array,-(sp)
 			cmp #'t,@(sp)
 			bne error
@@ -125,32 +138,40 @@ check3:		tst (sp)+
 			add #2,(sp)
 			cmp #'e,@(sp)
 			bne error
+			cmp #1,startgm		;check if the game already started
+			bne error
 			tst (sp)+
-			jmp time	
+			jmp time
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  error   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
 error:		tst (sp)+
-			mov #errormsg,-(sp)
+			mov #errormsg,-(sp)	;print the error message
 			mov #LEN_ERROR,-(sp)
 			jsr pc, printMsg
 			add #4,sp
-			mov #array,-(sp)
+			mov #array,-(sp)	;print the wrong input
 			mov LENARRAY,-(sp)
 			jsr pc, printMsg
 			add #4,sp
-			mov #parnmsg,-(sp) 		;print " to close
+			mov #parnmsg,-(sp) 	;print " to close
 			mov #1,-(sp)
 			jsr pc, printMsg
-			add #4,sp
-			bis #1, @#tks
-			jmp prdollar	
-chkstart:   add #2,(sp)
+			add #4,sp			;pop the stack
+			bis #1, @#tks		;turn on the option to write an input
+			jmp prdollar		;print dollar and waiting for entering an input
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+chkstart:   add #2,(sp)			;ignore spaces
 			cmp #' ,@(sp)
 			beq chkstart
-			cmp #'c,@(sp)
-			beq addcomp1
+			cmp #'c,@(sp)			
+			beq addcomp1		;check which type is the white player
 			cmp #'h,@(sp)
-			bne error
+			bne error			
 			br addhumn1
-addcomp1:	mov #cmptrmsg,type1
+addcomp1:	mov #cmptrmsg,type1	;add the type of player 1 to type1
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
@@ -162,12 +183,12 @@ addhumn1:	mov #humanmsg,type1
 			br time1
 time1:		mov r1,-(sp)
 			clr r1
-chkspac1:	add #2,2(sp)
+chkspac1:	add #2,2(sp)		;ignore spaces
 			cmp #' ,@2(sp)
 			beq chkspac1
-			clr num1  				;before using as a counter of digits		
-			clr num2				;before using as a counter of digits
-addigit1:	cmp #60,@2(sp)
+			clr num1  			;before using as a counter of digits		
+			clr num2			;before using as a counter of digits
+addigit1:	cmp #60,@2(sp)		;checking that the input is really number
 			bhi error
 			cmp #72,@2(sp)
 			blo error
@@ -176,11 +197,11 @@ addigit1:	cmp #60,@2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum1,indxarr;
 			add num1,indxarr
-			mov @2(sp),@indxarr		;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num1
 			
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			sub #60, r1
+			sub #60, r1			;convert the number to octal from ascii value
 			add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
@@ -191,14 +212,14 @@ addigit1:	cmp #60,@2(sp)
 endtime1:	add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
-			mov r1,timeW
-			clr r1
+			mov r1,timeW		;move the number to timeW
+			clr r1				;check which type is the black player
 			cmp #'c,@2(sp)
 			beq addcomp2
 			cmp #'h,@2(sp)
 			bne error1
 			br addhumn2
-addcomp2:	mov #cmptrmsg,type2
+addcomp2:	mov #cmptrmsg,type2	;move the type of the black player to type2
 			add #2,2(sp)
 			cmp #' ,@2(sp)
 			bne error1
@@ -208,11 +229,11 @@ addhumn2:	mov #humanmsg,type2
 			cmp #' ,@2(sp)
 			bne error1
 			br time2
-time2:		add #2,2(sp)
+time2:		add #2,2(sp)		;ignore of spaces
 			cmp #' ,@2(sp)
 			beq time2
 			;add #2,2(sp)
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking that the input is really number
 			bhi error1 ;;;;;;;;;;;;;;;;;;;
 			cmp #72,@2(sp)
 			blo error1
@@ -220,10 +241,10 @@ time2:		add #2,2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
-			mov @2(sp),@indxarr			;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			sub #60,r1
+			sub #60,r1			;convert the number to octal from ascii value
 addigit2:	add #2,2(sp)
 			cmp #60,@2(sp)
 			bhi endtime2
@@ -234,33 +255,36 @@ addigit2:	add #2,2(sp)
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
-			mov @2(sp),@indxarr			;moving 1 digit
+			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			sub #60,r1
 			br addigit2
 error1:		jmp error
-endtime2:	mov r1,timeB
+endtime2:	mov r1,timeB		;move the number to timeW
 			mov (sp)+,r1
-			inc startgm
+			inc startgm			;start the game after checking hat the start is ik
 			tst (sp)+
 			jmp start
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's move is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 chkmove:	mov r1,-(sp)
 			clr r1
-chkspac2:	add #2,2(sp)
+chkspac2:	add #2,2(sp)		;ignore spaces
 			cmp #' ,@2(sp)
 			beq chkspac2
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
 	        add @2(sp),r1
-			sub #60, r1
+			sub #60, r1			;convert the number from ascii value to octal value
 			add #2,2(sp)
 			mul #10,r1
 			add @2(sp),r1
 			sub #60,r1
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
@@ -278,99 +302,96 @@ endtime3:	add #2,2(sp)
 			cmp #67,@2(sp)
 			blo error1
 			add @2(sp),r1
-			sub #60,r1
-			add #2,2(sp)
+			sub #60,r1			;checking if the numbers are with two digits and in the rate between 0-7
+			add #2,2(sp)		;convert the number from ascii value to octal value
 			mul #10,r1
 			add @2(sp),r1
 			sub #60,r1
-			cmp #60,@2(sp)
+			cmp #60,@2(sp)		;checking if the numbers are with two digits and in the rate between 0-7
 			bhi error1
 			cmp #67,@2(sp)
 			blo error1
-endtime4:	mov r1,dest
+			mov r1,dest
 			mov (sp)+,r1
 			tst (sp)+
 			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if there is no move to the current player ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
-;checking if there is a move to the current player
-			mov #Board,-(sp)
+			mov #Board,-(sp)	;we are about to use NumMoves, that gets the board and current player
 			cmp Player,#1
 			beq chknomv2
 			mov #1,-(sp)
 			jsr pc,NumMoves
-			cmp #0,(sp)
+			cmp #0,(sp)			;checking if there is no more moves
 			beq nomoves
 			tst(sp)+
 			br contchk
 chknomv2:	mov #2,-(sp) 
 			jsr pc,NumMoves
-			cmp #0,(sp)
+			cmp #0,(sp) 		;checking if there is no more moves	
 			beq nomoves
 			tst(sp)+
 			br contchk
-nomoves:	tst (sp)+
+nomoves:	tst (sp)+			;if there is no moves the 
 			cmp src,#0
 			bne error3
 			cmp dest,#0
 			bne error3
 			jmp endchkmov
-			
-			
-			
-			
-			
-			
-contchk:	clr r0           ;Initialize registers
+					
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+									
+contchk:	clr r0              ;Initialize registers
 			clr r1				
 			clr r2
 			clr r3
-			cmp Player,#1   
-			beq black		 		
-						  
-white:  					
+			cmp Player,#1       ;checking who is the current player
+			beq black	
+	 		
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+						    	
 			clr r2
 			clr r3
-			cmp src,dest
+			cmp src,dest		;checking that the source and destination is not the same
 			blos error3
-			mov src,r0
-			add r0,r0
-			cmp Board(r0),#1
+			mov src,r0			;move the source to r0
+			add r0,r0			
+			cmp Board(r0),#1	;check if there is a white token in the source
 			bne error3
-			mov dest,r1
+			mov dest,r1			;move the destination to r1
 			add r1,r1 
-			cmp Board(r1),#0
+			cmp Board(r1),#0	;check if there is no token in the destination
 			bne error3
 			mov r0,r3
-			div #20,r2        ;in order to understand in which line in the board the current token is 
+			div #20,r2          ;in order to understand in which line in the board the current token is 
 			tst r2
-			beq error3        ;if r2 is zero it means that the token can't move
+			beq error3          ;if r2 is zero it means that the token can't move
 			sub #16,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the first right diagonal 
 			beq rd1plr1
 			sub #4,r0
-			cmp r0,r1
-			beq ld1plr1
+			cmp r0,r1			;check if the move is to the first left diagonal
+			beq ld1plr1			
 			sub #12,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second right diagonal(eating)
 			beq rd2plr1
 			sub #10,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second left diagonal(eating)
 			beq ld2plr1
-error3:		jmp error
-			
-rd1plr1:	cmp #16,r3
+error3:		jmp error			
+rd1plr1:	cmp #16,r3        	;if the token is on the right side of the board, there is no right diagonal  
 			beq error3
 			jmp endchkmov
-ld1plr1:	cmp #0,r3
+ld1plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
 			beq error3
 			jmp endchkmov
-rd2plr1:	cmp #16,r3
+rd2plr1:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error3
-			cmp #14,r3
+			cmp #14,r3			;if the token is on the 2right side of the board, there is no option to eat right   
 			beq error3
-			cmp r2,#1
+			cmp r2,#1			;if the quotient is 1(token's line), there is no option to eat the enemy
 			beq error3
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			sub #16,r4
 			cmp Board(r4),#1
@@ -378,13 +399,12 @@ rd2plr1:	cmp #16,r3
 			cmp Board(r4),#0
 			beq error3
 			jmp endchkmov
-ld2plr1:	cmp #0,r3
+ld2plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left 
+			cmp #2,r3			;if the token is on the 2'left side of the board, there is no option to eat left 
 			beq error2
-			cmp #2,r3
+			cmp r2,#1			;if the quotient is 1(token's line), there is no option to eat the enemy
 			beq error2
-			cmp r2,#1
-			beq error2
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			sub #22,r4
 			cmp Board(r4),#1
@@ -392,55 +412,51 @@ ld2plr1:	cmp #0,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		 
-black:  					
-			clr r2
+black: 		clr r2
 			clr r3
-			cmp dest,src
+			cmp dest,src		;checking that the source and destination is not the same
 			blos error2
-			mov src,r0
+			mov src,r0			;move the source to r0
 			add r0,r0
-			cmp Board(r0),#2
+			cmp Board(r0),#2	;check if there is a black token in the source
 			bne error2
-			mov dest,r1
+			mov dest,r1			;move the destination to r1
 			add r1,r1 
-			cmp Board(r1),#0
+			cmp Board(r1),#0	;check if there is no token in the destination
 			bne error2
 			mov r0,r3
-			div #20,r2        ;in order to understand in which line in the board the current token is 
+			div #20,r2          ;in order to understand in which line in the board the current token is 
 			cmp r2,#7
-			beq error2        ;if r2 is 7line it means that the token can't move
-			
+			beq error2          ;if r2 is 7line it means that the token can't move
 			add #16,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the first left diagonal
 			beq ld1plr2
-			
-			add #4,r0
-			cmp r0,r1
+			add #4,r0			
+			cmp r0,r1			;check if the move is to the first right diagonal
 			beq rd1plr2
-			
-			
 			add #12,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second left diagonal
 			beq ld2plr2
-			
 			add #10,r0
-			cmp r0,r1
+			cmp r0,r1			;check if the move is to the second right diagonal
 			beq rd2plr2
 			jmp error2
-ld1plr2:	cmp #0,r3
+ld1plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
 			beq error2
 			jmp endchkmov
-rd1plr2:	cmp #16,r3
+rd1plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no right diagonal  
 			beq error2
 			jmp endchkmov
-ld2plr2:	cmp #0,r3
+ld2plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left  
 			beq error2
-			cmp #2,r3
+			cmp #2,r3			;if the token is on the left side of the board, there is no option to eat left 
 			beq error2
-			cmp #6,r2
+			cmp #6,r2			;if the quotient is 6(token's line), there is no option to eat the enemy
 			beq error2
-			mov src,r4
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			add #16,r4
 			cmp Board(r4),#2
@@ -448,12 +464,13 @@ ld2plr2:	cmp #0,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov
-rd2plr2:	cmp #16,r3
+rd2plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
-			cmp #14,r3
+			cmp #14,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
-			cmp #6,r2
-			mov src,r4
+			cmp #6,r2			;if the quotient is 6(token's line), there is no option to eat the enemy
+			beq error2			
+			mov src,r4			;checking if there is an enemy between the source and destination
 			add src,r4
 			add #22,r4
 			cmp Board(r4),#2
@@ -461,21 +478,71 @@ rd2plr2:	cmp #16,r3
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov		
-error2:		jmp error1
-	
-endchkmov:	
-			bic #100,cls
+error2:		jmp error1	
+endchkmov:	bic #100,cls
 			jmp move
-			
-			
+						
+;---------------------------------------------------------------------------------------------
+;|                                            move                                            |
+;---------------------------------------------------------------------------------------------	
 
+move:		bic #100,cls
+			mov #Board,-(sp)
+			jsr r5,movPiece
+src:		.word 0
+dest:		.word 0	
+			tst (sp)+
 			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			jsr pc, linedrop
+			cmp Player,#1		;check who is the player to print 
+			beq blackprt		
+
+			mov #whitemsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			
+			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			jsr pc, printwho
+			add #2,sp				;pop to the message (the type)
+			br contprt
+			
+blackprt:	mov #blackmsg, -(sp)
+			mov #LEN4, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+			
+			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
+			jsr pc, printwho
+			add #2,sp				;pop to the message (type)
+
+contprt:	mov #timemsg, -(sp)
+			mov #LEN5, -(sp)		
+			jsr pc, printMsg
+			add #4,sp	
+			jsr pc,octTodec
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+			mov #secmsg, -(sp)
+			mov #LEN11, -(sp)		
+			jsr pc, printMsg
+			add #4,sp
+
+busy_w5:	tstb @#tps 
+			bpl busy_w5
+			
+			clr countsec		;initialization before using the clock again
+			clr countrst		;initialization before using the clock again
+			clr counter3
+			clr counter4
+		
+			jmp chngbord
+								
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 
-start:				
-			mov #100, @#tps
+start:		mov #100, @#tps
 			mov #startmsg, -(sp)
 			mov #LEN3, -(sp)
 			jsr pc, printMsg
@@ -553,7 +620,6 @@ busy_w2:	tstb @#tps
 			bpl busy_w2				;wait to the printer to be ready to print 
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
 ;---------------------------------------------------------------------------------------------				
@@ -585,30 +651,28 @@ changeB:	movb #'B, @pointer2
 			add #2, counter3
 			inc counter4
 			br chngbord
-
 fixplace:	add #2, counter4		;continue to next legal square to update (we are in enter)
-			br chngbord
-			
+			br chngbord			
 endchang:	
 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #boardlay, -(sp)
 			mov #LEN9, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			
 			mov #wordbord, -(sp)
 			mov #LEN10, -(sp)
 			jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length
-			
+			add #4,sp				;pop to the message and to the length			
 busy_w7:	tstb @#tps 
-			bpl busy_w7				;wait to the printer to be ready to print 				 				
-
+			bpl busy_w7				;wait to the printer to be ready to print 
+			
 			jsr pc, linedrop
 			cmp Player,#2
 			beq blacktrn
 			
-whitetrn:	;;;;;;;;sentences
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   white turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
+			;;;;;;;;sentences
 			mov #Curntmsg, -(sp)
 			mov #LEN13, -(sp)
 			jsr pc, printMsg
@@ -623,11 +687,15 @@ whitetrn:	;;;;;;;;sentences
 			jsr pc, printwho
 			add #2,sp				;pop to the message (type)
  
+;בדיקה אם זה מחשב או אנושי
+ 
+ 
 			bis #100,cls
 			inc Player
 			clr indxarr
 			jmp prdollar
 			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   black turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 						
 blacktrn:	;;;;sentences for current player
 			mov #Curntmsg, -(sp)
@@ -643,6 +711,9 @@ blacktrn:	;;;;sentences for current player
 			mov type2, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
 			jsr pc, printwho		;go to print Computer or Human 
 			add #2,sp				;pop to the message and to the length
+
+;בידקה אם מחשב או אנושי
+
 			
 			bis #100,cls
 			dec Player
@@ -651,68 +722,7 @@ blacktrn:	;;;;sentences for current player
 			
 	
 stop:		halt
-time:		halt
-;---------------------------------------------------------------------------------------------
-;|                                            move                                            |
-;---------------------------------------------------------------------------------------------	
-move:		bic #100,cls
-			mov #Board,-(sp)
-			jsr r5,movPiece
-src:		.word 0
-dest:		.word 0	
-			tst (sp)+
-			
-			;~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~
-			jsr pc, linedrop
-			cmp Player,#1		;check who is the player to print 
-			beq blackprt		
-
-whiteprt:	mov #whitemsg, -(sp)
-			mov #LEN4, -(sp)		
-			jsr pc, printMsg
-			add #4,sp	
-			
-			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			jsr pc, printwho
-			add #2,sp				;pop to the message (the type)
-			br contprt
-			
-blackprt:	mov #blackmsg, -(sp)
-			mov #LEN4, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
-			
-			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			jsr pc, printwho
-			add #2,sp				;pop to the message (type)
-
-contprt:	mov #timemsg, -(sp)
-			mov #LEN5, -(sp)		
-			jsr pc, printMsg
-			add #4,sp	
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			
-			mov countsec, -(sp)
-			mov #1, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
-			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #secmsg, -(sp)
-			mov #LEN11, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
-
-busy_w5:	tstb @#tps 
-			bpl busy_w5
-			
-			clr countsec		;initialization before using the clock again
-			clr countrst		;initialization before using the clock again
-			clr counter3
-			clr counter4
-		
-			jmp chngbord
-			
+time:		halt			
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
@@ -747,9 +757,60 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			mov 2(sp), counter1		;counter1 will hold the number of chars to print
 			iot
 			rts pc 
+			
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~- print octal in decimal -~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+octTodec: 	mov r2, -(sp)			;keep the original value of r2
+			mov r3, -(sp)			;keep the original value of r3
+			clr r2					;clear r2 before use to div
+			clr r3					;clear r3 before use to div
+			mov countrst, r3 		;move the reminder of the time to r3 before div
+			div #12, r2 			;div in 12 (10 in decimal)
+			mov r2,r3 
+			clr r2 
+			div #12, r2 
+			add #60, r2				;r2 will hold the 10th second of the reminder, change it to the ascii value
+			mov r2, -(sp)
+			mov #'., -(sp)			
+			clr r2
+			clr countoct			;use to know how many numbers to print  
+			clr r3					;r3 will keep the reminder in each diversion 
+			mov countsec, r3 		;move the seconds that passed to r3 before div
+divsec:							
+			div #12, r2				;to move to decimal number 
+			add #60,r3 
+			mov r3,-(sp)
+			inc countoct
+			mov r2, r3 
+			clr r2 
+			cmp r3, #12 			;check if we need to continue diverting 
+			bge divsec				;if the number in r2 is bigger or equal to 12 (10) - keep diverting
+			add #60, r3				;transfer to ascii value
+			mov r3, -(sp)			;put the first number to print in the stack (LIFO)
+			add #3,countoct			;number of chars to print with the first and last number and the point (.)
+			
+			;;print the number from sp
+printoct:	tst countoct
+			beq endoctal
+			movb (sp),numbrmsg
+			mov #numbrmsg,-(sp)
+			mov #1,-(sp)			;the length to print 
+			jsr pc, printMsg
+			add #6,sp 			;will pop the first number to print and its length(1)
+			dec countoct			;after print it, number of chars to print is decreased in 1
+			br printoct
+			
+endoctal:	mov (sp)+, r3
+			mov (sp)+, r2 
+			rts pc 					;go back 
+			
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
 ;---------------------------------------------------------------------------------------------
+
+
+
+
 
 
 
@@ -809,7 +870,7 @@ backspce:	jsr pc, busy_w
 			jmp endinp
 			
 busy_w:		tstb @#tps 
-			bpl busy_w				;wait to the printer to be ready to print	
+			bpl busy_w			;wait to the printer to be ready to print	
 			rts pc
 
 
@@ -838,6 +899,7 @@ endturn2:	bic #100,@#cls
 ;---------------------------------------------------------------------------------------------
 ;|                                     Auxiliary functions                                   |
 ;---------------------------------------------------------------------------------------------
+
 ;getMaxWP -gets the current board player, and step in labels and calculate the best step for the current player
 ;the parameters are enter in the label, and gets the addresses in stack for the return values.  
 ;getMaxWP returns in addresses the best move(source and destination), and the WP
@@ -1241,7 +1303,7 @@ cond2:							;condition 2 - checking if the step is zero
 			
 								;condition 3 - checking if the Player won
 			mov 10(sp),-(sp)	;move the board in to the top of the stack
-			mov Player,-(sp)	;move the Player in to the top tof the stack
+			mov Player,-(sp)	;move the Player in to the top of the stack
 			jsr pc,checkWin		;checks if the Player won
 			cmp #1,(sp)			;checkWin returns value in the top of the stack. if it 1- there is a winning
 			beq backrec		    ;if there is a winning we want to stop the recursion 
@@ -1782,14 +1844,14 @@ endCal2: 	rts pc 				;return after calculate
 
 . = torg + 15000
 
-Board:		.word	0,	1,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	2
-			.word	0,	0,	0,	0,	0,	0,	0,	0
+;Board:		.word	0,	1,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
+;			.word	0,	0,	0,	0,	0,	0,	0,	2
+;			.word	0,	0,	0,	0,	0,	0,	0,	0
 			
 . = torg + 15500
 
@@ -1838,13 +1900,16 @@ errormsg:	.ascii<\r\nCannot execute ">
 timemsg:	.ascii<move took >	
 			.even
 			
-secmsg:		.ascii<seconds.\r\n\r\n>	
+secmsg:		.ascii< seconds.\r\n\r\n>	
 			.even
 			
 entermsg:	.ascii<\r\n>	
 			.even
 			
 parnmsg:	.ascii<">	
+			.even
+			
+numbrmsg:	.ascii<.>	
 			.even
 
 indxarr: 	.word 0 				;initialize number of chars in the array
@@ -1870,16 +1935,18 @@ counter4:	.word 0					;counter4 to number board change
 countrst:	.word 0
 countsec:	.word 0
 Steps:      .word 0
+countoct:   .word 0
 
 
-;Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
-;			.word	2,	0,	2,	0,	2,	0,	2,	0
-;			.word	0,	2,	0,	2,	0,	2,	0,	2
-;			.word	0,	0,	0,	0,	0,	0,	0,	0
-;			.word	0,	0,	0,	0,	0,	0,	0,	0
-;			.word	1,	0,	1,	0,	1,	0,	1,	0
-;			.word	0,	1,	0,	1,	0,	1,	0,	1
-;			.word	1,	0,	1,	0,	1,	0,	1,	0
+
+Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	2,	0,	2,	0,	2,	0,	2,	0
+			.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	1,	0,	1,	0,	1,	0,	1,	0
+			.word	0,	1,	0,	1,	0,	1,	0,	1
+			.word	1,	0,	1,	0,	1,	0,	1,	0
 
 
 . = torg + 20000	
