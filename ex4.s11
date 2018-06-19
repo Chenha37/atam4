@@ -36,8 +36,9 @@ main: 		mov #main, sp
 			mov #200, @#62
 			mov #opnmsg, -(sp)		;print the open message
 			mov #LEN1, -(sp)
+			mov #1,isprint
 			jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length   
+			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
 			bis #101,@#tks			;turn on the IE,RE of the keyboard
@@ -47,7 +48,8 @@ prdollar:  	mov #dollar, -(sp)
 			mov #LEN2, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			bis #101,@#tks					
+			bis #101,@#tks	
+			mov #0,isprint
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
@@ -145,7 +147,7 @@ check4:		tst (sp)+			;check if the command is stop
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  error   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
-error:		tst (sp)+
+error:	    tst (sp)+
 			mov #errormsg,-(sp)	;print the error message
 			mov #LEN_ERROR,-(sp)
 			jsr pc, printMsg
@@ -163,9 +165,9 @@ error:		tst (sp)+
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-chkstart:   add #2,(sp)			;ignore spaces
-			cmp #' ,@(sp)
-			beq chkstart
+chkstart:   add #2,(sp)			
+			cmp #' ,@(sp)		
+			beq chkstart		;ignore spaces
 			cmp #'c,@(sp)			
 			beq addcomp1		;check which type is the white player
 			cmp #'h,@(sp)
@@ -193,22 +195,16 @@ addigit1:	cmp #60,@2(sp)		;checking that the input is really number
 			cmp #72,@2(sp)
 			blo error
 			add @2(sp),r1
-			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #timenum1,indxarr;
+			mov #timenum1,indxarr
 			add num1,indxarr
 			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num1
-			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			sub #60, r1			;convert the number to octal from ascii value
 			add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
 			mul #12,r1
 			br addigit1
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 endtime1:	add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
@@ -234,16 +230,14 @@ time2:		add #2,2(sp)		;ignore of spaces
 			beq time2
 			;add #2,2(sp)
 			cmp #60,@2(sp)		;checking that the input is really number
-			bhi error1 ;;;;;;;;;;;;;;;;;;;
+			bhi error1 
 			cmp #72,@2(sp)
 			blo error1
 			add @2(sp),r1
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
 			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			sub #60,r1			;convert the number to octal from ascii value
 addigit2:	add #2,2(sp)
 			cmp #60,@2(sp)
@@ -252,12 +246,10 @@ addigit2:	add #2,2(sp)
 			blo endtime2
 			mul #12,r1
 			add @2(sp),r1
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #timenum2,indxarr;
 			add num2,indxarr
 			mov @2(sp),@indxarr	;moving 1 digit
 			add #2,num2
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			sub #60,r1
 			br addigit2
 error1:		jmp error
@@ -267,7 +259,7 @@ endtime2:	mov r1,timeB		;move the number to timeW
 			tst (sp)+
 			jmp start
 
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's move is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's move is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 chkmove:	mov r1,-(sp)
 			clr r1
@@ -296,7 +288,6 @@ endtime3:	add #2,2(sp)
 			beq endtime3
 			mov r1,src
 			clr r1
-			;add #2,2(sp)
 			cmp #60,@2(sp)
 			bhi error1
 			cmp #67,@2(sp)
@@ -315,7 +306,7 @@ endtime3:	add #2,2(sp)
 			mov (sp)+,r1
 			tst (sp)+
 			
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if there is no move to the current player ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if there is no move to the current player ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
 			mov #Board,-(sp)	;we are about to use NumMoves, that gets the board and current player
 			cmp Player,#1
@@ -339,7 +330,7 @@ nomoves:	tst (sp)+			;if there is no moves the
 			bne error3
 			jmp endchkmov
 					
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 									
 contchk:	clr r0              ;Initialize registers
 			clr r1				
@@ -348,7 +339,7 @@ contchk:	clr r0              ;Initialize registers
 			cmp Player,#1       ;checking who is the current player
 			beq black	
 	 		
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~
 						    	
 			clr r2
 			clr r3
@@ -413,7 +404,7 @@ ld2plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no
 			beq error2
 			jmp endchkmov
 			
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		 
 black: 		clr r2
 			clr r3
@@ -486,19 +477,19 @@ endchkmov:	bic #100,cls
 ;|                                            move                                            |
 ;---------------------------------------------------------------------------------------------	
 
-move:		bic #100,cls
-			mov #Board,-(sp)
-			jsr r5,movPiece
+move:		bic #100,cls		;turn on the clock after a legal command of move  
+			mov #Board,-(sp)	;move the Board to sp, in order to sent it to movPiece function
+			jsr r5,movPiece		;source and destination are moved inline 
 src:		.word 0
 dest:		.word 0	
-			tst (sp)+
+			tst (sp)+			;pop the board address from the stack 
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			jsr pc, linedrop
-			cmp Player,#1		;check who is the player to print 
+			cmp Player,#1			;check who is the player to print 
 			beq blackprt		
 
-			mov #whitemsg, -(sp)
+			mov #whitemsg, -(sp)	;print "White"
 			mov #LEN4, -(sp)		
 			jsr pc, printMsg
 			add #4,sp	
@@ -508,22 +499,23 @@ dest:		.word 0
 			add #2,sp				;pop to the message (the type)
 			br contprt
 			
-blackprt:	mov #blackmsg, -(sp)
+blackprt:	mov #blackmsg, -(sp)	;print "Black"
 			mov #LEN4, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 			
 			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			jsr pc, printwho
+			jsr pc, printwho		;go to print the right player 
 			add #2,sp				;pop to the message (type)
 
-contprt:	mov #timemsg, -(sp)
+contprt:	mov #timemsg, -(sp)		;print "move took"
 			mov #LEN5, -(sp)		
 			jsr pc, printMsg
 			add #4,sp	
-			jsr pc,octTodec
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #secmsg, -(sp)
+			
+			jsr pc,octTodec			;print the time that passed on clock 
+			
+			mov #secmsg, -(sp)		;print "seconds"
 			mov #LEN11, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
@@ -542,7 +534,7 @@ busy_w5:	tstb @#tps
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 
-start:		mov #100, @#tps
+start:		mov #100, @#tps			;print start message
 			mov #startmsg, -(sp)
 			mov #LEN3, -(sp)
 			jsr pc, printMsg
@@ -550,12 +542,12 @@ start:		mov #100, @#tps
 			
 			jsr pc, linedrop
 			
-			mov #whitemsg, -(sp)
+			mov #whitemsg, -(sp)	;print "White"
 			mov #LEN4, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			mov #playrmsg, -(sp)
+			mov #playrmsg, -(sp)	;print "player is"
 			mov #LEN5, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
@@ -564,26 +556,24 @@ start:		mov #100, @#tps
 			jsr pc, printwho
 			add #2,sp				;pop to the message (type)
 			
-			mov #withmsg, -(sp)
-			mov #LEN7, -(sp)		;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
+			mov #withmsg, -(sp)		;prints "with"
+			mov #LEN7, -(sp)		
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #timenum1,-(sp)
+			mov #timenum1,-(sp)		;print the time that was entered for the current player
 			mov num1,-(sp)
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			mov #scopnmsg, -(sp)
+			mov #scopnmsg, -(sp)	;print "seconds per move"
 			mov #LEN8, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			jsr pc, linedrop
+			jsr pc, linedrop		;prints enter 
 			
-			mov #blackmsg, -(sp)
+			mov #blackmsg, -(sp)	;prints "Black"
 			mov #LEN4, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
@@ -602,10 +592,8 @@ start:		mov #100, @#tps
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #timenum2,-(sp)
+			mov #timenum2,-(sp)		;print the time that was entered for the current player
 			mov num2,-(sp)
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;?/???
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -618,7 +606,6 @@ start:		mov #100, @#tps
 			
 busy_w2:	tstb @#tps 
 			bpl busy_w2				;wait to the printer to be ready to print 
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
@@ -654,7 +641,6 @@ changeB:	movb #'B, @pointer2
 fixplace:	add #2, counter4		;continue to next legal square to update (we are in enter)
 			br chngbord			
 endchang:	
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 			mov #boardlay, -(sp)
 			mov #LEN9, -(sp)
 			jsr pc, printMsg
@@ -665,20 +651,18 @@ endchang:
 			add #4,sp				;pop to the message and to the length			
 busy_w7:	tstb @#tps 
 			bpl busy_w7				;wait to the printer to be ready to print 
-			
 			jsr pc, linedrop
 			cmp Player,#2
 			beq blacktrn
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   white turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		
-			;;;;;;;;sentences
-			mov #Curntmsg, -(sp)
+			;Print message before turn 
+			mov #Curntmsg, -(sp)	;print "Current Player: "
 			mov #LEN13, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			mov #whitemsg, -(sp)
+			mov #whitemsg, -(sp)    ;print "White "
 			mov #LEN4, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
@@ -689,7 +673,6 @@ busy_w7:	tstb @#tps
  
 ;בדיקה אם זה מחשב או אנושי
  
- 
 			bis #100,cls
 			inc Player
 			clr indxarr
@@ -697,13 +680,13 @@ busy_w7:	tstb @#tps
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   black turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 						
-blacktrn:	;;;;sentences for current player
-			mov #Curntmsg, -(sp)
+blacktrn:	;Print message before turn 
+			mov #Curntmsg, -(sp)	;print "Current Player: "
 			mov #LEN13, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
-			mov #blackmsg, -(sp)
+			mov #blackmsg, -(sp)	;print "White "
 			mov #LEN4, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
@@ -714,7 +697,6 @@ blacktrn:	;;;;sentences for current player
 
 ;בידקה אם מחשב או אנושי
 
-			
 			bis #100,cls
 			dec Player
 			clr indxarr
@@ -722,77 +704,15 @@ blacktrn:	;;;;sentences for current player
 			
 	
 stop:		halt
-<<<<<<< HEAD
-time:		halt
-;---------------------------------------------------------------------------------------------
-;|                                            move                                            |
-;---------------------------------------------------------------------------------------------	
-move:		bic #100,cls
-			mov #Board,-(sp)
-			jsr r5,movPiece
-src:		.word 0
-dest:		.word 0	
-			tst (sp)+
-			
-			;~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~
-			jsr pc, linedrop
-			cmp currplr,#0		;check who is the player to print 
-			beq blackprt		
-
-whiteprt:	mov #whitemsg, -(sp)
-			mov #LEN4, -(sp)		
-			jsr pc, printMsg
-			add #4,sp	
-			
-			mov type1, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			jsr pc, printwho
-			add #2,sp				;pop to the message (the type)
-			br contprt
-			
-blackprt:	mov #blackmsg, -(sp)
-			mov #LEN4, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
-			
-			mov type2, -(sp)		;type1 holds the address of the ascii array to print (Human or Computer)
-			jsr pc, printwho
-			add #2,sp				;pop to the message (type)
-
-contprt:	mov #timemsg, -(sp)
-			mov #LEN5, -(sp)		
-			jsr pc, printMsg
-			add #4,sp	
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			
-			jsr pc, octTodec
-			
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-			mov #secmsg, -(sp)
-			mov #LEN11, -(sp)		
-			jsr pc, printMsg
-			add #4,sp
-
-busy_w5:	tstb @#tps 
-			bpl busy_w5
-			
-			clr countsec		;initialization before using the clock again
-			clr countrst		;initialization before using the clock again
-			clr counter3
-			clr counter4
-		
-			jmp chngbord
-			
-=======
 time:		halt			
->>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print a line drop (enter) ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-linedrop:	mov #entermsg, -(sp)
-			mov #2, -(sp)		
+linedrop:	mov #entermsg, -(sp)	;move enter in ascii to the sp  
+			mov #2, -(sp)			;length of enter (2 chars)
 			jsr pc, printMsg
 			add #4,sp
 			rts pc 		
@@ -820,11 +740,7 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			iot
 			rts pc 
 			
-<<<<<<< HEAD
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print octal in decimal ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-=======
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~- print octal in decimal -~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
 
 octTodec: 	mov r2, -(sp)			;keep the original value of r2
 			mov r3, -(sp)			;keep the original value of r3
@@ -854,6 +770,12 @@ divsec:
 			add #60, r3				;transfer to ascii value
 			mov r3, -(sp)			;put the first number to print in the stack (LIFO)
 			add #3,countoct			;number of chars to print with the first and last number and the point (.)
+			cmp #60,(sp)			;check if the first number is Zero
+			beq popit				;if it is - pop it (we do not want to print it)
+			br printoct
+			
+popit:		tst (sp)+
+			dec countoct
 			
 			;;print the number from sp
 printoct:	tst countoct
@@ -885,7 +807,7 @@ endoctal:	mov (sp)+, r3
 ;---------------------------------------------------------------------------------------------
 . = torg + 7000
 
-;interrupt of the printer and iot 
+;~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the printer and iot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 printc: 	tst counter1 			;check number of words that left to print from array			
 			ble fin					;if there is no word left to print
 			movb @pointer1,@#tpb	;move the pointer1 to the word in the array to print
@@ -895,8 +817,10 @@ printc: 	tst counter1 			;check number of words that left to print from array
 fin:		clr busy 				;will turn off the flag - 
 			rti
 
-;interrupt of the keyboard
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the keyboard ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 inp: 		mov r0, -(sp)
+			cmp #1,isprint
+			beq endinp 
 			mov #array, r0 
 			add indxarr, r0			;r0 will hold the address of the next available char 
 			jsr pc, busy_w
@@ -913,7 +837,8 @@ endinp:		mov (sp)+,r0
 			bis #1, @#tks
 			rti
 			
-enter1: 	jsr pc, busy_w
+enter1: 	mov #1,isprint
+			jsr pc, busy_w
 			movb #'\r ,@#tpb
 			jsr pc, busy_w
 			movb #'\n ,@#tpb
@@ -939,7 +864,7 @@ busy_w:		tstb @#tps
 			bpl busy_w			;wait to the printer to be ready to print	
 			rts pc
 
-
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the clock ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 clock:		inc countrst
 			cmp #1000.,countrst	
 			beq resett
@@ -961,19 +886,18 @@ endturn2:	bic #100,@#cls
 			add #6,(sp)
 			rti
 			
-			
 ;---------------------------------------------------------------------------------------------
 ;|                                     Auxiliary functions                                   |
 ;---------------------------------------------------------------------------------------------
 
-;getMaxWP -gets the current board player, and step in labels and calculate the best step for the current player
-;the parameters are enter in the label, and gets the addresses in stack for the return values.  
-;getMaxWP returns in addresses the best move(source and destination), and the WP
-;the WP is return in r4 
 ;---------------------------------------------------------------------------------------------
 ;|                                 				get Max WP                                    |
 ;---------------------------------------------------------------------------------------------	
-	
+;getMaxWP -gets the current board player, and step in labels and calculate the best step for the current player
+;the parameters are enter in the label, and gets the addresses in stack for the return values.  
+;getMaxWP returns in addresses the best move(source and destination), and the WP
+;the WP is return in r4 	
+
 getMaxWP:
 								;checking if in the current board there is no steps to do  			
 	        mov #Board,-(sp)	;move the Board to the top of the stack
@@ -1041,12 +965,13 @@ nowinsit:	tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
 			rts pc				;return to the main
 			
-;fndtoken - gets a board and current player in stack and checking where there is the first 
-;token of the current player on the board
-;the function returns the first index on board in the stack
+
 ;---------------------------------------------------------------------------------------------
 ;|                                 	   	find token                                           |
 ;---------------------------------------------------------------------------------------------	
+;fndtoken - gets a board and current player in stack and checking where there is the first 
+;token of the current player on the board
+;the function returns the first index on board in the stack
 
 fndtoken:	mov r0,-(sp)		;will keep the register value
 			mov r1,-(sp)		;will keep the register value
@@ -1073,13 +998,14 @@ endtoken:	mov (sp)+ ,r3 		;will return r3 its original value
 			;inc/dec Playerhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
 			rts pc
 	
-;checkmov- the recursive function the look for a right move.
-;gets in stack the board, step, current player, and wp.
-;the function updates the source and destination places and calculate the wp and pass it to its addresses				
+			
 ;---------------------------------------------------------------------------------------------
 ;|                                          checkmov - RECURSIA                               |
 ;---------------------------------------------------------------------------------------------	
-		
+;checkmov- the recursive function the look for a right move.
+;gets in stack the board, step, current player, and wp.
+;the function updates the source and destination places and calculate the wp and pass it to its addresses	
+
 checkmov:	
 			
 			mov r0,-(sp) 		;keep current value of r0 in the stack
@@ -1098,8 +1024,6 @@ checkmov:
 			beq loop2mov	    ;if the number of player is 2 go to the loop for black player		
 								;if the number is not 2 (the number is 1) go to the loop for white player 		
 
-								
-
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		white move	                                      |
 ;---------------------------------------------------------------------------------------------	
@@ -1114,7 +1038,7 @@ loop1mov:  	clr r2				;clear the register
 			beq contmov1        ;if r2 is zero it means that the token can't move
 								;checking for a right move
 								
-;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   right move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   right move   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 								
 			cmp #16,r3			;checking if the token is in right column
 			beq ply1lmov        ;if the token is on the right side of the board, there is no right diagonal  
@@ -1452,13 +1376,14 @@ dest3:		.word 0				;initial the dest3
 			tst(sp)+			;pop the stack
 			rts pc
 				
-;gets a number of player and a player we need to calculate what is the best step for it, and 
-;checking if in this case we are looking for the best move or for the worst.
-;the parameters are moved in stack 
-;register r4 - if we look for the maximum move the register returns 1, if we look for minimum move the register returns -1.		
+	
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		minOrMax                                          |
 ;---------------------------------------------------------------------------------------------	
+;gets a number of player and a player we need to calculate what is the best step for it, and 
+;checking if in this case we are looking for the best move or for the worst.
+;the parameters are moved in stack 
+;register r4 - if we look for the maximum move the register returns 1, if we look for minimum move the register returns -1.	
 
 minOrMax: 
 			cmp @2(sp),4(sp)  ;checking if the current player is the player for it we need to check the moves.  
@@ -1468,11 +1393,12 @@ minOrMax:
 max: 		mov #1,r4         ;register 4 returns 1
 			rts pc			  ;back to the place we calLd to the function.
 
-;movPiece - will update a current board by moving a token from one place to other (given places).
-;r5 will hold (move parameter inline) the address of source and destination of the token.			
+			
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		movPiece                                          |
-;---------------------------------------------------------------------------------------------				
+;---------------------------------------------------------------------------------------------	
+;movPiece - will update a current board by moving a token from one place to other (given places).
+;r5 will hold (move parameter inline) the address of source and destination of the token.			
 			
 movPiece: 	mov r0,-(sp) 		;keep current value of r0 in the stack
 			mov r1,-(sp) 		;keep current value of r1 in the stack
@@ -1560,12 +1486,12 @@ endMovPiece:mov (sp)+,r4
 			mov (sp)+,r0
 			rts r5			
 		
-;calcWP - gets the current board and the player that his turn is now and calculates WP for the current player
-;the parameters are enter in the stack
-;the WP is return in r4 
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		calcWP                                            |
 ;---------------------------------------------------------------------------------------------	
+;calcWP - gets the current board and the player that his turn is now and calculates WP for the current player
+;the parameters are enter in the stack
+;the WP is return in r4 
 
 calcWP: 	mov r0,-(sp) 		;keep current value of r0 in the stack
 			mov r1,-(sp) 		;keep current value of r1 in the stack
@@ -1633,12 +1559,12 @@ EndClcWP: 	tst (sp)+			;will remove the number 1/-1 (from the checkWin function)
 			mov (sp)+, r0
 			rts pc 				;go back to the calling function 
 	
-;checkWin-the function checking if there is a winning to the current player.
-;gets in stack the board and current player and returns in stack 1 - if there is a winning for the current player
-;and -1 - if there is no winning for this player.
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		checkWin                                          |
 ;---------------------------------------------------------------------------------------------	
+;checkWin-the function checking if there is a winning to the current player.
+;gets in stack the board and current player and returns in stack 1 - if there is a winning for the current player
+;and -1 - if there is no winning for this player.
 		
 checkWin:
 			mov r0,-(sp) 		;keep current value of r0 in the stack
@@ -1715,12 +1641,12 @@ endLose:	tst (sp)+			;will pop the number of moves which returned from the NumMo
 			mov #-1., 2(sp) 	;will keep the -1 (means losing) in the stack (under the return address)
 			rts pc
 			
-;NumMoves - calculate the number of moves that a current player has in a current given board
-;gets a current board and a current player in stack and return the number of moves in stack
-;will return the number of moves in the stack
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		NumMoves                                          |
 ;---------------------------------------------------------------------------------------------	
+;NumMoves - calculate the number of moves that a current player has in a current given board
+;gets a current board and a current player in stack and return the number of moves in stack
+;will return the number of moves in the stack
 
 NumMoves:						
 			mov r0,-(sp) 		;keep current value of r0 in the stack
@@ -1867,13 +1793,13 @@ endNumMoves:clr r0
 			mov (sp)+, r0		;will return r0 its original value
 			rts pc	
 				
+;---------------------------------------------------------------------------------------------
+;|                                 	  		calcW                                             |
+;---------------------------------------------------------------------------------------------
 ;calcW - calculates the number of white tokens on the board 
 ;r3 - holds the pointer to the beginning of the current board (move parameter in register)
 ;r0 - will hold the index to pass over the board (the register need to be cleared before calling the function)
 ;r1 - will hold the number of white tokens in the end of the function (the register need to be cleared before calling the function)
-;---------------------------------------------------------------------------------------------
-;|                                 	  		calcW                                             |
-;---------------------------------------------------------------------------------------------
 
 calcW: 
 			cmp (r3),#1 		;search for white token
@@ -1886,13 +1812,13 @@ cont1:		add #2, r3
 			br calcW 			;continue to next square		
 endCal1: 	rts pc 				;return after calculate the number of white token on board 
 
+;---------------------------------------------------------------------------------------------
+;|                                 	  		calcB                                             |
+;---------------------------------------------------------------------------------------------
 ;calcB - calculates the number of black tokens on the board 
 ;r3 - holds the pointer to the beginning of the current board (move parameter in register)
 ;r0 - will hold the index to pass over the board - (the register need to be cleared before calling the function)
 ;r2 - will hold the number of black tokens in the end of the function (the register need to be cleared before calling the function)
-;---------------------------------------------------------------------------------------------
-;|                                 	  		calcB                                             |
-;---------------------------------------------------------------------------------------------
 
 calcB:
 			cmp (r3),#2 		;search for black token
@@ -1904,11 +1830,20 @@ cont2:		add #2, r3
 			beq endCal2			;end function
 			br calcB			;continue to next square
 endCal2: 	rts pc 				;return after calculate
-
-			
-			
+	
+	
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Board ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 . = torg + 15000
+
+Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	2,	0,	2,	0,	2,	0,	2,	0
+			.word	0,	2,	0,	2,	0,	2,	0,	2
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	0,	0,	0,	0,	0,	0,	0,	0
+			.word	1,	0,	1,	0,	1,	0,	1,	0
+			.word	0,	1,	0,	1,	0,	1,	0,	1
+			.word	1,	0,	1,	0,	1,	0,	1,	0
 
 ;Board:		.word	0,	1,	0,	0,	0,	0,	0,	0
 ;			.word	0,	0,	0,	0,	0,	0,	0,	0
@@ -1918,6 +1853,8 @@ endCal2: 	rts pc 				;return after calculate
 ;			.word	0,	0,	0,	0,	0,	0,	0,	0
 ;			.word	0,	0,	0,	0,	0,	0,	0,	2
 ;			.word	0,	0,	0,	0,	0,	0,	0,	0
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ printed ascii array ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
 . = torg + 15500
 
@@ -2000,26 +1937,10 @@ counter3:	.word 0					;counter3 to number board change
 counter4:	.word 0					;counter4 to number board change
 countrst:	.word 0
 countsec:	.word 0
-<<<<<<< HEAD
-countoct:	.word 0 				;counter to the function which changes from octal to decimal number 
-=======
 Steps:      .word 0
 countoct:   .word 0
->>>>>>> 76dd5a30f6f8bf8e41c19985c30cbd2e13a3ce1c
-
-
-
-Board:		.word	0,	2,	0,	2,	0,	2,	0,	2
-			.word	2,	0,	2,	0,	2,	0,	2,	0
-			.word	0,	2,	0,	2,	0,	2,	0,	2
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	0,	0,	0,	0,	0,	0,	0,	0
-			.word	1,	0,	1,	0,	1,	0,	1,	0
-			.word	0,	1,	0,	1,	0,	1,	0,	1
-			.word	1,	0,	1,	0,	1,	0,	1,	0
-
+isprint:    .word 0
 
 . = torg + 20000	
 rate: .word 1000.
-
 
