@@ -36,8 +36,9 @@ main: 		mov #main, sp
 			mov #200, @#62
 			mov #opnmsg, -(sp)		;print the open message
 			mov #LEN1, -(sp)
+			mov #1,isprint
 			jsr pc, printMsg
-			add #4,sp				;pop to the message and to the length   
+			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
 			bis #101,@#tks			;turn on the IE,RE of the keyboard
@@ -47,7 +48,8 @@ prdollar:  	mov #dollar, -(sp)
 			mov #LEN2, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			bis #101,@#tks					
+			bis #101,@#tks	
+			mov #0,isprint
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
@@ -145,7 +147,7 @@ check4:		tst (sp)+			;check if the command is stop
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  error   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
-error:		tst (sp)+
+error:	    tst (sp)+
 			mov #errormsg,-(sp)	;print the error message
 			mov #LEN_ERROR,-(sp)
 			jsr pc, printMsg
@@ -788,6 +790,12 @@ divsec:
 			add #60, r3				;transfer to ascii value
 			mov r3, -(sp)			;put the first number to print in the stack (LIFO)
 			add #3,countoct			;number of chars to print with the first and last number and the point (.)
+			cmp #60,(sp)			;check if the first number is Zero
+			beq popit				;if it is - pop it (we do not want to print it)
+			br printoct
+			
+popit:		tst (sp)+
+			dec countoct
 			
 			;;print the number from sp
 printoct:	tst countoct
@@ -831,6 +839,8 @@ fin:		clr busy 				;will turn off the flag -
 
 ;interrupt of the keyboard
 inp: 		mov r0, -(sp)
+			cmp #1,isprint
+			beq endinp 
 			mov #array, r0 
 			add indxarr, r0			;r0 will hold the address of the next available char 
 			jsr pc, busy_w
@@ -847,7 +857,8 @@ endinp:		mov (sp)+,r0
 			bis #1, @#tks
 			rti
 			
-enter1: 	jsr pc, busy_w
+enter1: 	mov #1,isprint
+			jsr pc, busy_w
 			movb #'\r ,@#tpb
 			jsr pc, busy_w
 			movb #'\n ,@#tpb
@@ -1936,6 +1947,7 @@ countrst:	.word 0
 countsec:	.word 0
 Steps:      .word 0
 countoct:   .word 0
+isprint:    .word 0
 
 
 
