@@ -23,27 +23,26 @@ main: 		mov #main, sp
 			;mov #1,isprint
 			mov #inp, @#60 			;initialize keyboard vector
 			mov #200, @#62
+			bic #101,@#tks			;turn off the IE,RE of the keyboard
 			mov #opnmsg, -(sp)		;print the open message
 			mov #50, -(sp)			;length of message
 			jsr pc, printMsg		
 			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
-			bis #101,@#tks			;turn on the IE,RE of the keyboard
-			
 			
 prdollar:  	mov #dollar, -(sp)
 			mov #6, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
+			clr indxarr
 			bis #101,@#tks	
-			mov #0,isprint
+			;mov #0,isprint
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time end - Game Over ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-			;bic #101,@#tks
 			jsr pc, linedrop
 			jsr pc, linedrop
 			
@@ -85,7 +84,8 @@ contmsg:	mov #outmsg, -(sp)		;print the open message
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is start ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-checkinp:   mov #array,-(sp)	;check if the command is start
+checkinp:   
+			mov #array,-(sp)	;check if the command is start
 			cmp #'s,@(sp)			
 			bne check2
 			add #2,(sp)
@@ -184,7 +184,7 @@ error:	    tst (sp)+
 			mov #1,-(sp)
 			jsr pc, printMsg
 			add #4,sp			;pop the stack
-			bis #1, @#tks		;turn on the option to write an input
+			;bis #1, @#tks		;turn on the option to write an input
 			jmp prdollar		;print dollar and waiting for entering an input
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -501,7 +501,7 @@ endchkmov:	bic #100,cls
 ;|                                            move                                            |
 ;---------------------------------------------------------------------------------------------	
 
-move:		bic #100,cls		;turn on the clock after a legal command of move  
+move:		bic #100,cls		;turn off the clock after a legal command of move  
 			mov #Board,-(sp)	;move the Board to sp, in order to sent it to movPiece function
 			jsr r5,movPiece		;source and destination are moved inline 
 src:		.word 0
@@ -509,6 +509,7 @@ dest:		.word 0
 			tst (sp)+			;pop the board address from the stack 
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			bic #101,@#tks 
 			cmp Player,#1			;check who is the player to print 
 			beq blackprt		
 
@@ -560,7 +561,8 @@ busy_w5:	tstb @#tps
 ;|                                            time                                           |
 ;---------------------------------------------------------------------------------------------
 			
-time:		jsr pc, linedrop		;print enter 
+time:		bic #101,@#tks 
+			jsr pc, linedrop		;print enter 
 			mov #timelmsg, -(sp)	;print "Time left: "
 			mov #13, -(sp)			;length of message
 			jsr pc, printMsg
@@ -599,45 +601,127 @@ printit:	mov timeprnt , -(sp)	;move the timeprnt and num1 to sp in order to use 
 ;|                                            stop                                           |
 ;---------------------------------------------------------------------------------------------		
 
-stop:		halt
-			mov #WPmsg, -(sp)			;print "WP for "
-			mov #7, -(sp)				;length of message
-			jsr pc, printMsg
-			add #4,sp					;pop to the message and to the length
-			
-			;;;print current player 
-			
-			mov #WPconmsg, -(sp)		;print "WP for "
-			mov #12, -(sp)
-			jsr pc, printMsg
-			add #4,sp					;pop to the message and to the length
-			
-			;;print WP 
-			
-			;;check if tie or win 
-			
-			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ win ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			;;print who win
-			
-			mov #WPconmsg, -(sp)	;print "WP for "
-			mov #12, -(sp)
+stop:		bic #100,cls			;turn off the clock before finish the current game
+			jsr pc, linedrop
+			mov #WPmsg, -(sp)		;print "WP for "
+			mov #7, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			cmp Player,#2
+			bne blakstop
 			
-			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ tie ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			;if white player 
+			mov #whitemsg, -(sp)	;print "White"
+			mov #6, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			mov r4, -(sp)			;calcWP is using r4 in its calculate, keep the original value
+			mov #Board,-(sp)
+			mov #1,-(sp)
+			jsr pc,calcWP
+			add #4,sp				;pop Board address and current player 
+			br contstop
 		
-			dec startgm				;will turn off the game is on flag 
+			;if black player 
+blakstop:	mov #blackmsg, -(sp)	;prints "Black"
+			mov #6, -(sp)			;length of message
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
 			
+			mov r4, -(sp)			;calcWP is using r4 in its calculate, keep the original value
+			mov #Board,-(sp)
+			mov #2,-(sp)
+			jsr pc,calcWP
+			add #4,sp				;pop Board address and current player 
+			
+contstop:	mov #WPconmsg, -(sp)	;print "player is "
+			mov #12, -(sp)			;length of message
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and the length
+			
+			cmp r4,#0
+			beq itstie
+			
+			cmp r4,#0
+			bgt printWP
+			
+printWP:	mov r4, -(sp)
+			halt
+			jsr pc,turndec			;print the value of r4 
+			tst (sp)+			
+			
+			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ win ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			jsr pc, linedrop
 			jsr pc, linedrop
 			
+			cmp r4,#0
+			bgt curwins
+			
+			cmp Player,#1
+			bne curisB1
+			
+			mov #whitemsg, -(sp)	;print "White"
+			mov #6, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			br contwin
+			
+curisB1:	mov #blackmsg, -(sp)	;print "Black"
+			mov #6, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+curwins:	cmp Player,#2
+			bne curisB2
+			
+			mov #whitemsg, -(sp)	;print "White"
+			mov #6, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			br contwin
+			
+curisB2:	mov #blackmsg, -(sp)	;print "Black"
+			mov #6, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+contwin:	mov (sp)+,r4 			;return r4 its original value
+			
+			mov #endmsg, -(sp)		;print "player wins!"
+			mov #14, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			jsr pc, linedrop
+			dec startgm				;will turn off the game is on flag 
+			jmp prdollar			;will go back to dollar to get the next input 
+			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ tie ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
+itstie:		
+			mov #'0,numbrmsg		
+			mov #numbrmsg, -(sp)	;print zero as WP
+			mov #1, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			jsr pc, linedrop
+			jsr pc, linedrop
+			mov #tiemsg, -(sp)		;print "WP for "
+			mov #25, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			jsr pc, linedrop
+			dec startgm				;will turn off the game is on flag  
 			jmp prdollar			;will go back to dollar to get the next input 
 								
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 ;initializing the game
-start:		;bic #101,@#tks 
+start:		bic #101,@#tks 
 			mov #1, Player			;White player is first
 			clr countrst
 			clr countsec
@@ -714,11 +798,6 @@ start:		;bic #101,@#tks
 			
 
 			jsr pc, linedrop
-			
-;busy_w2:	tstb @#tps 
-;			bpl busy_w2				;wait to the printer to be ready to print 			
-			
-
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
@@ -904,7 +983,35 @@ printoct:	tst countoct
 endoctal:	mov (sp)+, r3
 			mov (sp)+, r2 
 			rts pc 					;go back 
+
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ turn a single number to dec ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~			
+turndec:	mov r2, -(sp)		;keep r2 value 
+			mov r3,-(sp)		;keep r3 value 
+			clr countoct 		
+			clr r3
+			mov (sp),r2			;move r2 value 
+looppr:		mov r2,r3
+			clr r2 
+			div #12,r2
+			add #60,r3 			;turn to ascii 
+			mov r3,-(sp)
+			inc countoct
+			cmp #0,r2 
+			beq endandpr
+			br looppr
+endandpr: 	tst countoct
+			beq endocta2
+			movb (sp),numbrmsg
+			mov #numbrmsg,-(sp)
+			mov #1,-(sp)			;the length to print 
+			jsr pc, printMsg
+			add #6,sp 				;will pop the first number to print and its length(1)
+			dec countoct			;after print it, number of chars to print is decreased in 1
+			br printoct
 			
+endocta2:	mov (sp)+, r3
+			mov (sp)+, r2 
+			rts pc 					;go back 
 			
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
@@ -919,7 +1026,7 @@ endoctal:	mov (sp)+, r3
 ;---------------------------------------------------------------------------------------------
 ;|                                     interrupts                                            |
 ;---------------------------------------------------------------------------------------------
-. = torg + 7000
+. = torg + 8000
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the printer and iot ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 printc: 	tst counter1 			;check number of words that left to print from array			
@@ -952,6 +1059,7 @@ endinp:		mov (sp)+,r0
 			rti
 			
 enter1: 	;mov #1,isprint
+			bic #101,@#tks
 			jsr pc, busy_w
 			movb #'\r ,@#tpb
 			jsr pc, busy_w
@@ -2064,7 +2172,7 @@ WPconmsg:	.ascii<player is >
 endmsg:		.ascii<player wins!>	
 			.even
 			
-tiemsg:		.ascii<its a tie! Game over.> ;length 25
+tiemsg:		.ascii<it's a tie! Game over.> 
 			.even
 			
 indxarr: 	.word 0 				;initialize number of chars in the array
