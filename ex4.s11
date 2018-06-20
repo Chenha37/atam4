@@ -30,7 +30,15 @@ prdollar:  	mov #dollar, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			clr indxarr
-			bis #101,@#tks	
+			bis #101,@#tks
+			cmp #1,iscom
+			bne waiting
+			mov (sp)+,r4
+			mov (sp)+,r3
+			mov (sp)+,r2
+			mov (sp)+,r1
+			mov (sp)+,r0
+			rts pc	
 waiting:	wait
 			cmp #1,isinp
 			beq chkinph
@@ -188,15 +196,7 @@ error:	    tst (sp)+
 			jsr pc, printMsg
 			add #4,sp			;pop the stack
 			;bis #1, @#tks		;turn on the option to write an input
-			cmp #1,iscom
-			bne temp
-			mov (sp)+,r4
-			mov (sp)+,r3
-			mov (sp)+,r2
-			mov (sp)+,r1
-			mov (sp)+,r0
-			rts pc
-temp:		jmp prdollar		;print dollar and waiting for entering an input
+			jmp prdollar		;print dollar and waiting for entering an input
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -614,9 +614,7 @@ printit:	mov timeprnt , -(sp)	;move the timeprnt and num1 to sp in order to use 
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			cmp #1,iscom
-			bne temp1
-			rts pc
-temp1:		jmp prdollar			;go back to continue the game 
+			jmp prdollar			;go back to continue the game 
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            stop                                           |
@@ -719,9 +717,7 @@ contwin:	mov (sp)+,r4 			;return r4 its original value
 			mov #1,timeout
 			dec startgm				;will turn off the game is on flag
 			cmp #1,iscom
-			bne temp3
-			rts pc
-temp3:		jmp prdollar			;will go back to dollar to get the next input 
+			jmp prdollar			;will go back to dollar to get the next input 
 			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ tie ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		
 itstie:		
