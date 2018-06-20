@@ -1,27 +1,12 @@
-tks = 177560 ;which line in code???????????????????????
+tks = 177560 ;which line in code?????????????????????????
 tkb = 177562
 tps = 177564
 tpb = 177566
 cls = 177546
 NIL = 0
-LEN1 = 50		;length of Welcome message
-LEN2 = 6		;length of dollar
-LEN3 = 27 		;length of starting message
-LEN4 = 6 		;length of "white"/"black"
-LEN5 = 12		;length of word "player is "/"move took "
-LEN6 = 11		;length of word "Computer"
-LEN7 = 5		;length of word "with "
-LEN8 = 23		;length of word "seconds per move"
-LEN9 = 25		;length of word "Board layout:"
-LEN10 = 120 	;length of board
-LEN11 = 15 		;length of " seconds."
-LEN12 = 6 		;length of "Human" 
-LEN13 = 20		;length of "Current Player: "
-LEN14 = 2
-LEN15 = 13		;length of "Time left: "
-LEN16 = 10		;length of " seconds"
-LEN17 = 32		;length of "GameOver"
-LEN_ERROR=22
+;;;;;;;;;;;;;;;;;;;;;;;delete!!;;;;;;;;;;;;;;;
+LEN19 = 14
+LEN20 = 25		;length of "its a tie! Game over."
 
 . = torg + 1000 
 
@@ -39,8 +24,8 @@ main: 		mov #main, sp
 			mov #inp, @#60 			;initialize keyboard vector
 			mov #200, @#62
 			mov #opnmsg, -(sp)		;print the open message
-			mov #LEN1, -(sp)
-			jsr pc, printMsg
+			mov #50, -(sp)			;length of message
+			jsr pc, printMsg		
 			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
@@ -48,7 +33,7 @@ main: 		mov #main, sp
 			
 			
 prdollar:  	mov #dollar, -(sp)
-			mov #LEN2, -(sp)
+			mov #6, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			bis #101,@#tks	
@@ -66,7 +51,7 @@ waiting:	wait
 			beq prBlack
 
 			mov #whitemsg, -(sp)	;print "White"
-			mov #LEN4, -(sp)		
+			mov #6, -(sp)		
 			jsr pc, printMsg
 			add #4,sp	
 			
@@ -76,7 +61,7 @@ waiting:	wait
 			br contmsg
 			
 prBlack:	mov #blackmsg, -(sp)	;print "Black"
-			mov #LEN4, -(sp)		
+			mov #6, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 			
@@ -85,11 +70,13 @@ prBlack:	mov #blackmsg, -(sp)	;print "Black"
 			add #2,sp				;pop to the message (type)
 		
 contmsg:	mov #outmsg, -(sp)		;print the open message
-			mov #LEN17, -(sp)
+			mov #32, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			jsr pc, rstBoard		;reset Board
 			dec startgm				;will change the flag of the game is on - to off 
+			clr indxarr				;initialize the input array 
 			
 			jmp prdollar			;go to print dollar for next move 
 ;---------------------------------------------------------------------------------------------
@@ -186,11 +173,11 @@ check4:		tst (sp)+			;check if the command is time
 			
 error:	    tst (sp)+
 			mov #errormsg,-(sp)	;print the error message
-			mov #LEN_ERROR,-(sp)
+			mov #22,-(sp);length of message
 			jsr pc, printMsg
 			add #4,sp
 			mov #array,-(sp)	;print the wrong input
-			mov LENARRAY,-(sp)
+			mov LENARRAY,-(sp)	;length of message
 			jsr pc, printMsg
 			add #4,sp
 			mov #parnmsg,-(sp) 	;print " to close
@@ -526,7 +513,7 @@ dest:		.word 0
 			beq blackprt		
 
 			mov #whitemsg, -(sp)	;print "White"
-			mov #LEN4, -(sp)		
+			mov #6, -(sp)		
 			jsr pc, printMsg
 			add #4,sp	
 			
@@ -536,7 +523,7 @@ dest:		.word 0
 			br contprt
 			
 blackprt:	mov #blackmsg, -(sp)	;print "Black"
-			mov #LEN4, -(sp)		
+			mov #6, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 			
@@ -545,14 +532,14 @@ blackprt:	mov #blackmsg, -(sp)	;print "Black"
 			add #2,sp				;pop to the message (type)
 
 contprt:	mov #timemsg, -(sp)		;print "move took"
-			mov #LEN5, -(sp)		
+			mov #12, -(sp)		
 			jsr pc, printMsg
 			add #4,sp	
 			
 			jsr pc,octTodec			;print the time that passed on clock 
 			
 			mov #secmsg, -(sp)		;print "seconds"
-			mov #LEN11, -(sp)		
+			mov #15, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 
@@ -572,7 +559,7 @@ busy_w5:	tstb @#tps
 			
 time:		jsr pc, linedrop
 			mov #timelmsg, -(sp)	;print "Time left: "
-			mov #LEN15, -(sp)
+			mov #13, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -580,8 +567,10 @@ time:		jsr pc, linedrop
 			
 			
 			
+			
+			
 			mov #secmsg, -(sp)		;print " seconds"
-			mov #LEN16, -(sp)
+			mov #10, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			jmp prdollar
@@ -590,46 +579,66 @@ time:		jsr pc, linedrop
 ;|                                            stop                                           |
 ;---------------------------------------------------------------------------------------------		
 
-
 stop:		halt
+			mov #WPmsg, -(sp)			;print "WP for "
+			mov #7, -(sp)				;length of message
+			jsr pc, printMsg
+			add #4,sp					;pop to the message and to the length
+			
+			;;;print current player 
+			
+			mov #WPconmsg, -(sp)		;print "WP for "
+			mov #12, -(sp)
+			jsr pc, printMsg
+			add #4,sp					;pop to the message and to the length
+			
+			;;print WP 
+			
+			;;check if tie or win 
+			
+			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ win ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			;;print who win
+			
+			mov #WPconmsg, -(sp)			;print "WP for "
+			mov #12, -(sp)
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+			
+			
+			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ tie ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		
 			dec startgm				;will turn off the game is on flag 
 			
 			jsr pc, linedrop
 			
-			
-			
-			
-			
-			
-			
 			jmp prdollar			;will go back to dollar to get the next input 
-
-
-
 								
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 
-start:		
+start:		;initializing the game 
 			mov #1, Player			;White player is first
-			;jsr pc, rstBoard		;reset the board 
+			clr countrst
+			clr countsec
+			clr indxarr
+			jsr pc, rstBoard		;reset the board 
 			mov #100, @#tps			;print start message
 			
 			mov #startmsg, -(sp)
-			mov #LEN3, -(sp)
+			mov #27, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			jsr pc, linedrop
 			
 			mov #whitemsg, -(sp)	;print "White"
-			mov #LEN4, -(sp)
+			mov #6, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			mov #playrmsg, -(sp)	;print "player is"
-			mov #LEN5, -(sp)
+			mov #12, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -638,7 +647,7 @@ start:
 			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)		;prints "with"
-			mov #LEN7, -(sp)		
+			mov #5, -(sp)		;length of message	
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -648,19 +657,19 @@ start:
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)	;print "seconds per move"
-			mov #LEN8, -(sp)
+			mov #23, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			jsr pc, linedrop		;prints enter 
 			
 			mov #blackmsg, -(sp)	;prints "Black"
-			mov #LEN4, -(sp)
+			mov #6, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			mov #playrmsg, -(sp)
-			mov #LEN5, -(sp)
+			mov #12, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -669,7 +678,7 @@ start:
 			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)
-			mov #LEN7, -(sp)
+			mov #5, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -679,14 +688,17 @@ start:
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)
-			mov #LEN8, -(sp)
+			mov #23, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+
 			jsr pc, linedrop
 			
-busy_w2:	tstb @#tps 
-			bpl busy_w2				;wait to the printer to be ready to print 
+;busy_w2:	tstb @#tps 
+;			bpl busy_w2				;wait to the printer to be ready to print 			
+			
+
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            GAME                                           |
@@ -723,13 +735,15 @@ fixplace:	add #2, counter4		;continue to next legal square to update (we are in 
 			br chngbord			
 endchang:	
 			mov #boardlay, -(sp)
-			mov #LEN9, -(sp)
+			mov #25, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
+			
 			mov #wordbord, -(sp)
-			mov #LEN10, -(sp)
+			mov #120, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length			
+
 busy_w7:	tstb @#tps 
 			bpl busy_w7				;wait to the printer to be ready to print 
 			jsr pc, linedrop
@@ -739,12 +753,12 @@ busy_w7:	tstb @#tps
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   white turn   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			;Print message before turn 
 			mov #Curntmsg, -(sp)	;print "Current Player: "
-			mov #LEN13, -(sp)
+			mov #20, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			mov #whitemsg, -(sp)    ;print "White "
-			mov #LEN4, -(sp)
+			mov #6, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
  
@@ -763,12 +777,12 @@ busy_w7:	tstb @#tps
 						
 blacktrn:	;Print message before turn 
 			mov #Curntmsg, -(sp)	;print "Current Player: "
-			mov #LEN13, -(sp)
+			mov #20, -(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
 			mov #blackmsg, -(sp)	;print "White "
-			mov #LEN4, -(sp)
+			mov #6, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -800,9 +814,9 @@ linedrop:	mov #entermsg, -(sp)	;move enter in ascii to the sp
 printwho:	mov 2(sp),-(sp) 		;copy the type to the top of the stack 
 			cmpb #'C, @(sp)			
 			beq itscomp				;check if the player that was entered is computer or human to print 
-			mov #LEN12, -(sp)		;length of "Human" 
+			mov #6, -(sp)		;length of "Human" 
 			br pascomp
-itscomp:	mov #LEN6, -(sp)		;length of "Computer"
+itscomp:	mov #11, -(sp)			;length of "Computer"
 pascomp:	jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			rts pc 
@@ -862,7 +876,7 @@ printoct:	tst countoct
 			mov #numbrmsg,-(sp)
 			mov #1,-(sp)			;the length to print 
 			jsr pc, printMsg
-			add #6,sp 			;will pop the first number to print and its length(1)
+			add #6,sp 				;will pop the first number to print and its length(1)
 			dec countoct			;after print it, number of chars to print is decreased in 1
 			br printoct
 			
@@ -976,11 +990,11 @@ endturn2:	bic #100,@#cls
 rstBoard:	mov r0, -(sp)
 			mov r1, -(sp) 
 			mov r2, -(sp)
-			mov #Board, r0			;r0 will hold the address of the board to change 
-			mov #Boardorg, r1 		;r1 will hold the address of the board to change to 
 			clr r2 					;r2 will be index to copy
 looprst:	cmp #200, r2
 			beq endrstB
+			mov #Board, r0			;r0 will hold the address of the board to change 
+			mov #Boardorg, r1 		;r1 will hold the address of the board to change to 
 			add r2,r0 
 			add r2,r1
 			mov (r1),(r0) 			;will change the current square 
@@ -1937,8 +1951,8 @@ endCal2: 	rts pc 				;return after calculate
 
 . = torg + 15000
 
-Board:		.word	1,	2,	0,	2,	0,	2,	0,	2
-			.word	2,	0,	2,	0,	2,	0,	2,	0
+Board:		.word	1,	1,	1,	1,	0,	1,	1,	1
+			.word	1,	0,	2,	0,	2,	0,	2,	0
 			.word	0,	2,	0,	2,	0,	2,	0,	2
 			.word	0,	0,	0,	0,	0,	0,	0,	0
 			.word	0,	0,	0,	0,	0,	0,	0,	0
@@ -1959,7 +1973,7 @@ Boardorg:	.word	0,	2,	0,	2,	0,	2,	0,	2
 			
 . = torg + 15500
 
-wordbord:	.ascii<_B_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
+wordbord:	.ascii<_W_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W_W_W_\r\n_W_W_W_W\r\nW_W_W_W_\r\n>
 			.even
 	
 opnmsg: 	.ascii<hello, welcome to chental checkers game!>	
@@ -2022,8 +2036,15 @@ timelmsg:	.ascii<Time left: >
 outmsg:		.ascii<is out of time. Game Over.>	
 			.even
 			
-
-
+WPmsg:		.ascii<WP for >	
+			.even
+			
+WPconmsg:	.ascii<player is >	
+			.even
+					
+endmsg:		.ascii<player wins!>	
+			.even
+			
 indxarr: 	.word 0 				;initialize number of chars in the array
 array: 		.blkw 62 				;maximal chars to keep
 counter1:	.word 0					;counter1 to number of words in array
