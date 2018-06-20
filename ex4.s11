@@ -29,7 +29,7 @@ main: 		mov #main, sp
 			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
-			;bis #101,@#tks			;turn on the IE,RE of the keyboard
+			bis #101,@#tks			;turn on the IE,RE of the keyboard
 			
 			
 prdollar:  	mov #dollar, -(sp)
@@ -37,13 +37,13 @@ prdollar:  	mov #dollar, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			bis #101,@#tks	
-			;mov #0,isprint
+			mov #0,isprint
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time end - Game Over ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-			bic #101,@#tks
+			;bic #101,@#tks
 			jsr pc, linedrop
 			jsr pc, linedrop
 			
@@ -637,7 +637,7 @@ stop:		halt
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
 ;initializing the game
-start:		bic #101,@#tks 
+start:		;bic #101,@#tks 
 			mov #1, Player			;White player is first
 			clr countrst
 			clr countsec
@@ -934,7 +934,7 @@ fin:		clr busy 				;will turn off the flag -
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the keyboard ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 inp: 		mov r0, -(sp)
 			;cmp #1,isprint
-			beq endinp  
+			;beq endinp  
 			mov #array, r0 
 			add indxarr, r0			;r0 will hold the address of the next available char 
 			jsr pc, busy_w
