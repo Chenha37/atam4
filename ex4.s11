@@ -1166,7 +1166,7 @@ enter1: 	;mov #1,isprint
 			mov #1,isinp
 			cmp #1,iscom
 			bne endenter 
-			jsr pc,checkinp
+temp:		jsr pc,checkinp
 endenter:	rti
 			
 backspce:	jsr pc, busy_w
