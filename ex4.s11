@@ -1,4 +1,4 @@
-tks = 177560 ;which line in code?????????????????????????
+tks = 177560 ;which line in code???????????????????????lala
 tkb = 177562
 tps = 177564
 tpb = 177566
@@ -20,7 +20,7 @@ main: 		mov #main, sp
 			mov #printc, @#64		;initialize printer vector
 			mov #200, @#66
 			mov #100, @#tps			;turn on the IE of the printer
-			mov #1,isprint
+			;mov #1,isprint
 			mov #inp, @#60 			;initialize keyboard vector
 			mov #200, @#62
 			mov #opnmsg, -(sp)		;print the open message
@@ -29,7 +29,7 @@ main: 		mov #main, sp
 			add #4,sp				;pop to the message and to the length
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
-			bis #101,@#tks			;turn on the IE,RE of the keyboard
+			;bis #101,@#tks			;turn on the IE,RE of the keyboard
 			
 			
 prdollar:  	mov #dollar, -(sp)
@@ -37,13 +37,13 @@ prdollar:  	mov #dollar, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			bis #101,@#tks	
-			mov #0,isprint
+			;mov #0,isprint
 waiting:	wait
 			br waiting				;wait to interrupt
 			jmp checkinp
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time end - Game Over ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-
+			bic #101,@#tks
 			jsr pc, linedrop
 			jsr pc, linedrop
 			
@@ -536,7 +536,10 @@ contprt:	mov #timemsg, -(sp)		;print "move took"
 			jsr pc, printMsg
 			add #4,sp	
 			
+			mov countsec,-(sp)
+			mov countrst,-(sp)
 			jsr pc,octTodec			;print the time that passed on clock 
+			add #4,sp 				;pop the values 
 			
 			mov #secmsg, -(sp)		;print "seconds"
 			mov #15, -(sp)		
@@ -557,23 +560,40 @@ busy_w5:	tstb @#tps
 ;|                                            time                                           |
 ;---------------------------------------------------------------------------------------------
 			
-time:		jsr pc, linedrop
+time:		jsr pc, linedrop		;print enter 
 			mov #timelmsg, -(sp)	;print "Time left: "
-			mov #13, -(sp)		;length of message
+			mov #13, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			cmp Player, #2			;check who is the player for knowing the time
+			bne blcktime			;if it is the black player 
 			
+			clr timeprnt			;will hold the time that left
+			clr num1				;will hold the reminder of the time that left 
 			
+			mov timeW, timeprnt		;if the current player is white 
+			br contime
 			
+blcktime:	mov timeB, timeprnt		;if the current player is black
+contime:	sub countsec, timeprnt	;put the time that was left in timeprnt
 			
+			cmp #144, countrst  	;check if the reminder is Zero 
+			bge printit				;if it is go to print it 
+			dec timeprnt			;if not - decrease in 1 timeprnt 
+			mov #1000.,num1 		;put 1000 in decimal in num1 
+			sub countrst,num1		;sub it by countrst (in order to get the 10th time that left)
 			
-			
+printit:	mov timeprnt , -(sp)	;move the timeprnt and num1 to sp in order to use octTodec and print it
+			mov num1, -(sp)
+			jsr pc, octTodec
+			add #4,sp 				;pop timeprnt and num1 
+				
 			mov #secmsg, -(sp)		;print " seconds"
-			mov #10, -(sp)		;length of message
+			mov #10, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			jmp prdollar
+			jmp prdollar			;go back to continue the game 
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            stop                                           |
@@ -599,7 +619,7 @@ stop:		halt
 			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ win ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			;;print who win
 			
-			mov #WPconmsg, -(sp)			;print "WP for "
+			mov #WPconmsg, -(sp)	;print "WP for "
 			mov #12, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
@@ -616,8 +636,8 @@ stop:		halt
 ;---------------------------------------------------------------------------------------------
 ;|                                            start                                           |
 ;---------------------------------------------------------------------------------------------			
-
-start:		;initializing the game 
+;initializing the game
+start:		bic #101,@#tks 
 			mov #1, Player			;White player is first
 			clr countrst
 			clr countsec
@@ -647,7 +667,7 @@ start:		;initializing the game
 			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)		;prints "with"
-			mov #5, -(sp)		;length of message	
+			mov #5, -(sp)			;length of message	
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -657,7 +677,7 @@ start:		;initializing the game
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)	;print "seconds per move"
-			mov #23, -(sp)		;length of message
+			mov #23, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -678,7 +698,7 @@ start:		;initializing the game
 			add #2,sp				;pop to the message (type)
 			
 			mov #withmsg, -(sp)
-			mov #5, -(sp)		;length of message
+			mov #5, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -688,7 +708,7 @@ start:		;initializing the game
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)
-			mov #23, -(sp)		;length of message
+			mov #23, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -814,7 +834,7 @@ linedrop:	mov #entermsg, -(sp)	;move enter in ascii to the sp
 printwho:	mov 2(sp),-(sp) 		;copy the type to the top of the stack 
 			cmpb #'C, @(sp)			
 			beq itscomp				;check if the player that was entered is computer or human to print 
-			mov #6, -(sp)		;length of "Human" 
+			mov #6, -(sp)			;length of "Human" 
 			br pascomp
 itscomp:	mov #11, -(sp)			;length of "Computer"
 pascomp:	jsr pc, printMsg
@@ -833,12 +853,13 @@ printMsg:  	tst busy				;in order to check if the printer is busy (by a flag)
 			rts pc 
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~- print octal in decimal -~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;gets the number and the reminder in octal to print in decimal 
 
 octTodec: 	mov r2, -(sp)			;keep the original value of r2
 			mov r3, -(sp)			;keep the original value of r3
 			clr r2					;clear r2 before use to div
 			clr r3					;clear r3 before use to div
-			mov countrst, r3 		;move the reminder of the time to r3 before div
+			mov 6(sp), r3 			;move the reminder of the time to r3 before div
 			div #12, r2 			;div in 12 (10 in decimal)
 			mov r2,r3 
 			clr r2 
@@ -849,7 +870,7 @@ octTodec: 	mov r2, -(sp)			;keep the original value of r2
 			clr r2
 			clr countoct			;use to know how many numbers to print  
 			clr r3					;r3 will keep the reminder in each diversion 
-			mov countsec, r3 		;move the seconds that passed to r3 before div
+			mov 14(sp), r3 			;move the seconds that passed to r3 before div
 divsec:							
 			div #12, r2				;to move to decimal number 
 			add #60,r3 
@@ -885,8 +906,6 @@ endoctal:	mov (sp)+, r3
 			rts pc 					;go back 
 			
 			
-
-			
 ;---------------------------------------------------------------------------------------------
 ;|                                      commands                                             |
 ;---------------------------------------------------------------------------------------------
@@ -914,7 +933,7 @@ fin:		clr busy 				;will turn off the flag -
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the keyboard ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 inp: 		mov r0, -(sp)
-			cmp #1,isprint
+			;cmp #1,isprint
 			beq endinp  
 			mov #array, r0 
 			add indxarr, r0			;r0 will hold the address of the next available char 
@@ -932,7 +951,7 @@ endinp:		mov (sp)+,r0
 			bis #1, @#tks
 			rti
 			
-enter1: 	mov #1,isprint
+enter1: 	;mov #1,isprint
 			jsr pc, busy_w
 			movb #'\r ,@#tpb
 			jsr pc, busy_w
@@ -2045,6 +2064,9 @@ WPconmsg:	.ascii<player is >
 endmsg:		.ascii<player wins!>	
 			.even
 			
+tiemsg:		.ascii<its a tie! Game over.> ;length 25
+			.even
+			
 indxarr: 	.word 0 				;initialize number of chars in the array
 array: 		.blkw 62 				;maximal chars to keep
 counter1:	.word 0					;counter1 to number of words in array
@@ -2056,8 +2078,8 @@ pointer2: 	.blkw 1
 counter2:	.word 0					;used to board
 type1:		.blkw 1
 type2:		.blkw 1  
-timeW:		.word 0
-timeB:		.word 0
+timeW:		.word 0					;holds the time of White player 
+timeB:		.word 0					;holds the time of Black player 
 timenum1:	.blkw 16
 timenum2:	.blkw 16
 num1:		.word 0 
@@ -2072,6 +2094,7 @@ countoct:   .word 0
 isprint:    .word 0
 timeout:	.word 0
 WP:			.word 0
+timeprnt:	.word 0
 
 . = torg + 20000	
 rate: .word 1000.
