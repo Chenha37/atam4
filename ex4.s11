@@ -1,15 +1,9 @@
-tks = 177560 ;which line in code???????????????????????lala
+tks = 177560 
 tkb = 177562
 tps = 177564
 tpb = 177566
 cls = 177546
-NIL = 0
-;;;;;;;;;;;;;;;;;;;;;;;delete!!;;;;;;;;;;;;;;;
-LEN19 = 14
-LEN20 = 25		;length of "its a tie! Game over."
-
 . = torg + 1000 
-
 ;---------------------------------------------------------------------------------------------
 ;|                                          main                                             |
 ;---------------------------------------------------------------------------------------------
@@ -37,12 +31,16 @@ prdollar:  	mov #dollar, -(sp)
 			add #4,sp				;pop to the message and to the length
 			clr indxarr
 			bis #101,@#tks	
-			;mov #0,isprint
 waiting:	wait
-			br waiting				;wait to interrupt
-			jmp checkinp
+			cmp #1,isinp
+			beq chkinph
+			cmp #1,timeout
+			beq endtimem
+			br waiting
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time end - Game Over ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+endtimem:	clr timeout
 			jsr pc, linedrop
 			jsr pc, linedrop
 			
@@ -84,7 +82,12 @@ contmsg:	mov #outmsg, -(sp)		;print the open message
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the command is start ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-checkinp:   
+checkinp:   mov r0,-(sp)
+			mov r1,-(sp)
+			mov r2,-(sp)
+			mov r3,-(sp)
+			mov r4,-(sp)
+chkinph:	clr isinp
 			mov #array,-(sp)	;check if the command is start
 			cmp #'s,@(sp)			
 			bne check2
@@ -185,7 +188,15 @@ error:	    tst (sp)+
 			jsr pc, printMsg
 			add #4,sp			;pop the stack
 			;bis #1, @#tks		;turn on the option to write an input
-			jmp prdollar		;print dollar and waiting for entering an input
+			cmp #1,iscom
+			bne temp
+			mov (sp)+,r4
+			mov (sp)+,r3
+			mov (sp)+,r2
+			mov (sp)+,r1
+			mov (sp)+,r0
+			rts pc
+temp:		jmp prdollar		;print dollar and waiting for entering an input
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -193,28 +204,28 @@ chkstart:   add #2,(sp)
 			cmp #' ,@(sp)		
 			beq chkstart		;ignore spaces
 			cmp #'c,@(sp)			
-			beq addcomp1		;check which type is the white player
+			beq .+14 ;addcomp1			;check which type is the white player
 			cmp #'h,@(sp)
 			bne error			
-			br addhumn1
-addcomp1:	mov #cmptrmsg,type1	;add the type of player 1 to type1
+			br .+26;addhuman1
+			mov #cmptrmsg,type1	;add the type of player 1 to type1 - addcomp1
 			add #2,(sp)
 			cmp #' ,@(sp)
 			bne error
-			br time1
-addhumn1:	mov #humanmsg,type1
-			add #2,(sp)
+			br .+26;time1
+			mov #humanmsg,type1 ;addhuman1
+			add #2,(sp);time1
 			cmp #' ,@(sp)
 			bne error
-			br time1
-time1:		mov r1,-(sp)
+			br .+2;time1
+			mov r1,-(sp)
 			clr r1
-chkspac1:	add #2,2(sp)		;ignore spaces
+			add #2,2(sp);chkspace1		ignore spaces
 			cmp #' ,@2(sp)
-			beq chkspac1
+			beq .-14;chkspace1
 			clr num1  			;before using as a counter of digits		
 			clr num2			;before using as a counter of digits
-addigit1:	cmp #60,@2(sp)		;checking that the input is really number
+			cmp #60,@2(sp);addigit1		checking that the input is really number
 			bhi error
 			cmp #72,@2(sp)
 			blo error
@@ -228,7 +239,7 @@ addigit1:	cmp #60,@2(sp)		;checking that the input is really number
 			cmp #' ,@2(sp)
 			beq endtime1
 			mul #12,r1
-			br addigit1
+			br .-102;addigit1			
 endtime1:	add #2,2(sp)
 			cmp #' ,@2(sp)
 			beq endtime1
@@ -285,7 +296,9 @@ endtime2:	mov r1,timeB		;move the number to timeW
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's move is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-chkmove:	mov r1,-(sp)
+chkmove:	cmp #1,iscom
+			beq error1
+			mov r1,-(sp)
 			clr r1
 chkspac2:	add #2,2(sp)		;ignore spaces
 			cmp #' ,@2(sp)
@@ -360,7 +373,7 @@ contchk:	clr r0              ;Initialize registers
 			clr r1				
 			clr r2
 			clr r3
-			cmp Player,#1       ;checking who is the current player
+			cmp Player,#2       ;checking who is the current player
 			beq black	
 	 		
 ;~~~~~~~~~~~~~~~~~~~~~~~ checking for white player if the source and destination is ok ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -383,24 +396,24 @@ contchk:	clr r0              ;Initialize registers
 			beq error3          ;if r2 is zero it means that the token can't move
 			sub #16,r0
 			cmp r0,r1			;check if the move is to the first right diagonal 
-			beq rd1plr1
+			beq .+36;rd1plr1
 			sub #4,r0
 			cmp r0,r1			;check if the move is to the first left diagonal
-			beq ld1plr1			
+			beq .+40;ld1plr1			
 			sub #12,r0
 			cmp r0,r1			;check if the move is to the second right diagonal(eating)
-			beq rd2plr1
+			beq  .+42     ;rd2plr1
 			sub #10,r0
 			cmp r0,r1			;check if the move is to the second left diagonal(eating)
-			beq ld2plr1
+			beq  .+114    ;ld2plr1
 error3:		jmp error			
-rd1plr1:	cmp #16,r3        	;if the token is on the right side of the board, there is no right diagonal  
+			cmp #16,r3;rd1plr1   ;if the token is on the right side of the board, there is no right diagonal  
 			beq error3
 			jmp endchkmov
-ld1plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
+			cmp #0,r3	;ld1plr1		if the token is on the left side of the board, there is no left diagonal  
 			beq error3
 			jmp endchkmov
-rd2plr1:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
+			cmp #16,r3	;rd2plr1		if the token is on the right side of the board, there is no option to eat right 
 			beq error3
 			cmp #14,r3			;if the token is on the 2right side of the board, there is no option to eat right   
 			beq error3
@@ -414,7 +427,7 @@ rd2plr1:	cmp #16,r3			;if the token is on the right side of the board, there is 
 			cmp Board(r4),#0
 			beq error3
 			jmp endchkmov
-ld2plr1:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left 
+			cmp #0,r3	;ld2plr1		if the token is on the left side of the board, there is no option to eat left 
 			cmp #2,r3			;if the token is on the 2'left side of the board, there is no option to eat left 
 			beq error2
 			cmp r2,#1			;if the quotient is 1(token's line), there is no option to eat the enemy
@@ -448,24 +461,24 @@ black: 		clr r2
 			beq error2          ;if r2 is 7line it means that the token can't move
 			add #16,r0
 			cmp r0,r1			;check if the move is to the first left diagonal
-			beq ld1plr2
+			beq .+36      ;ld1plr2
 			add #4,r0			
 			cmp r0,r1			;check if the move is to the first right diagonal
-			beq rd1plr2
+			beq  .+40     ;rd1plr2
 			add #12,r0
 			cmp r0,r1			;check if the move is to the second left diagonal
-			beq ld2plr2
+			beq  .+42     ;ld2plr2
 			add #10,r0
 			cmp r0,r1			;check if the move is to the second right diagonal
-			beq rd2plr2
+			beq  .+114     ;rd2plr2
 			jmp error2
-ld1plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no left diagonal  
+			cmp #0,r3	;ld1plr2		if the token is on the left side of the board, there is no left diagonal  
 			beq error2
 			jmp endchkmov
-rd1plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no right diagonal  
+			cmp #16,r3	;rd1plr2		if the token is on the right side of the board, there is no right diagonal  
 			beq error2
 			jmp endchkmov
-ld2plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no option to eat left  
+			cmp #0,r3 ;ld2plr2			if the token is on the left side of the board, there is no option to eat left  
 			beq error2
 			cmp #2,r3			;if the token is on the left side of the board, there is no option to eat left 
 			beq error2
@@ -479,7 +492,7 @@ ld2plr2:	cmp #0,r3			;if the token is on the left side of the board, there is no
 			cmp Board(r4),#0
 			beq error2
 			jmp endchkmov
-rd2plr2:	cmp #16,r3			;if the token is on the right side of the board, there is no option to eat right 
+			cmp #16,r3	;rd2plr2		;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
 			cmp #14,r3			;if the token is on the right side of the board, there is no option to eat right 
 			beq error2
@@ -507,9 +520,14 @@ move:		bic #100,cls		;turn off the clock after a legal command of move
 src:		.word 0
 dest:		.word 0	
 			tst (sp)+			;pop the board address from the stack 
-			
+			cmp Player,#2 ;change the player
+			beq changtow
+			mov #2,Player
+			br printime
+changtow:	mov #1,Player
+			br printime
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ print time took message ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			bic #101,@#tks 
+printime:	bic #101,@#tks 
 			cmp Player,#1			;check who is the player to print 
 			beq blackprt		
 
@@ -595,7 +613,10 @@ printit:	mov timeprnt , -(sp)	;move the timeprnt and num1 to sp in order to use 
 			mov #10, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
-			jmp prdollar			;go back to continue the game 
+			cmp #1,iscom
+			bne temp1
+			rts pc
+temp1:		jmp prdollar			;go back to continue the game 
 
 ;---------------------------------------------------------------------------------------------
 ;|                                            stop                                           |
@@ -648,7 +669,7 @@ contstop:	mov #WPconmsg, -(sp)	;print "player is "
 			bgt printWP
 			
 printWP:	mov r4, -(sp)
-			halt
+			;halt
 			jsr pc,turndec			;print the value of r4 
 			tst (sp)+			
 			
@@ -695,8 +716,12 @@ contwin:	mov (sp)+,r4 			;return r4 its original value
 			add #4,sp				;pop to the message and to the length
 			
 			jsr pc, linedrop
-			dec startgm				;will turn off the game is on flag 
-			jmp prdollar			;will go back to dollar to get the next input 
+			mov #1,timeout
+			dec startgm				;will turn off the game is on flag
+			cmp #1,iscom
+			bne temp3
+			rts pc
+temp3:		jmp prdollar			;will go back to dollar to get the next input 
 			;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ tie ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		
 itstie:		
@@ -866,9 +891,52 @@ busy_w7:	tstb @#tps
 			add #2,sp				;pop to the message (type)
  
 ;בדיקה אם זה מחשב או אנושי
+				
+			cmp type1,#humanmsg
+			beq humanwh
+			
+
+			
+			bis #101,@#tks
+			mov #1,iscom
+			bis #100,@#cls
+busy_w9:	tstb @#tps 
+			bpl busy_w9			
+			jsr pc,linedrop
+			jsr pc,linedrop
+busy_w6:	tstb @#tps 
+			bpl busy_w6
+			mov #'$,tpb
+busy_w8:	tstb @#tps 
+			bpl busy_w8
+						
+			
+			mov #1,Steps
+			mov #src,-(sp)
+			mov #dest,-(sp)
+			mov #WP,-(sp)
+			jsr pc,getMaxWP
+			tst (sp)+
+			tst (sp)+
+			tst (sp)+
+			mov #2,Player
+			mov #0,timeout
+			cmp #0,startgm
+			bne temp4
+			jmp prdollar
+temp4:		;mov src,src5
+			;mov dest,dest5
+			;mov #Board, -(sp)
+			;jsr r5,movPiece		;source and destination are moved inline 
+;src5:		.word 0
+;dest5:		.word 0	
+			;tst (sp)+
+			clr iscom
+			jmp chngbord
+			
  
-			bis #100,cls
-			inc Player
+humanwh:	bis #100,cls
+			;inc Player
 			clr indxarr
 			jmp prdollar
 			
@@ -889,13 +957,40 @@ blacktrn:	;Print message before turn
 			jsr pc, printwho		;go to print Computer or Human 
 			add #2,sp				;pop to the message and to the length
 
+	
+;	        cmp type2,#humanmsg
+;			beq humanbl
+;watng2:  	tstb @#tps 
+;			bpl watng2			
+;			jsr pc,linedrop
+;			jsr pc,linedrop
+;watng3:	tstb @#tps 
+;			bpl watng3
+;			mov #'$,tpb
+;watng4:	tstb @#tps 
+;			bpl watng4
 ;בידקה אם מחשב או אנושי
-
-			bis #100,cls
-			dec Player
+;			mov #1,iscom
+;			bis #100,@#cls
+;			mov #1,Steps
+;			mov #src,-(sp)
+;;			mov #dest,-(sp)
+;			mov #WP,-(sp)
+;			jsr pc,getMaxWP
+;			tst (sp)+
+;			tst (sp)+
+;			tst (sp)+
+;			mov #1,Player
+;			mov #0,timeout
+;			clr iscom
+;			jmp chngbord
+			
+			
+						
+humanbl:	bis #100,@#cls
+			;dec Player
 			clr indxarr
-			jmp prdollar
-					
+			jmp prdollar					
 ;---------------------------------------------------------------------------------------------
 ;|                                   general functions                                       |
 ;---------------------------------------------------------------------------------------------	
@@ -1071,8 +1166,12 @@ enter1: 	;mov #1,isprint
 			mov indxarr,LENARRAY
 			mov #0, indxarr
 			mov (sp)+, r0
-			add #2, (sp)
-			rti
+			;add #2, (sp)
+			mov #1,isinp
+			cmp #1,iscom
+			bne endenter 
+			jsr pc,checkinp
+endenter:	rti
 			
 backspce:	jsr pc, busy_w
 			movb #' ,@#tpb 
@@ -1088,24 +1187,26 @@ busy_w:		tstb @#tps
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the clock ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 clock:		inc countrst
-			cmp #1000.,countrst	
+			cmp rate,countrst	
 			beq resett
 			rti
 resett:		clr countrst
 			inc countsec
-			cmp Player, #1
+			cmp Player, #2
 			beq fintimB  
 			cmp timeW,countsec
 			beq endturn1
 			rti
 endturn1:   bic #100,@#cls
-			add #6,(sp)
+			mov #1,timeout
+			;add #6,(sp)
 			rti
 fintimB:	cmp timeB,countsec
 			beq endturn2
 			rti 	
-endturn2:	bic #100,@#cls 
-			add #6,(sp)
+endturn2:	bic #100,@#cls
+			mov #1,timeout
+			;add #6,(sp)
 			rti
 			
 ;---------------------------------------------------------------------------------------------
@@ -1202,11 +1303,22 @@ nowinsit:	tst (sp)+			;pop the stack
 			mov (sp),-(sp)		;save the wp twice like in the recursion
 			jsr pc,checkmov		;get in to the recursion and looking for a right move
 			mov (sp)+,@12(sp)	;move the final wp from the recursion to its address
-			;check if time is over hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+			cmp #1,timeout
+			beq donerec			;llllllllllllllllllllllllllllllllll
+		;	add #10,sp
+			tst (sp)+
+			tst (sp)+
+			tst (sp)+
+			tst (sp)+
+		    add #2,Steps
+			br getMaxWP				;check if time is over hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh					
+donerec:	
 			tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
-			rts pc				;return to the main
+			tst (sp)+
+			rts pc	
+						
 			
 ;---------------------------------------------------------------------------------------------
 ;|                                 	   	find token                                           |
@@ -1532,8 +1644,13 @@ cond2:							;condition 2 - checking if the step is zero
 			beq clccurwp		;if it 0 we want to stop the recursion
 			
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  condition 3 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	
+cond3:		cmp #1,timeout
+			beq clccurwp
 			
-								;condition 3 - checking if the Player won
+;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  condition 4 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
+								;condition 4 - checking if the Player won
 			mov 10(sp),-(sp)	;move the board in to the top of the stack
 			mov Player,-(sp)	;move the Player in to the top of the stack
 			jsr pc,checkWin		;checks if the Player won
@@ -2203,7 +2320,9 @@ isprint:    .word 0
 timeout:	.word 0
 WP:			.word 0
 timeprnt:	.word 0
+isinp:		.word 0
+iscom:		.word 0
 
 . = torg + 20000	
-rate: .word 1000.
+rate: .word 50.
 
