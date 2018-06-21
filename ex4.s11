@@ -1,4 +1,4 @@
-tks = 177560 ;
+tks = 177560 ;;
 tkb = 177562
 tps = 177564
 tpb = 177566
@@ -14,7 +14,6 @@ main: 		mov #main, sp
 			mov #printc, @#64		;initialize printer vector
 			mov #200, @#66
 			mov #100, @#tps			;turn on the IE of the printer
-			;mov #1,isprint
 			mov #inp, @#60 			;initialize keyboard vector
 			mov #200, @#62
 			bic #101,@#tks			;turn off the IE,RE of the keyboard
@@ -42,7 +41,7 @@ prdollar:  	jsr pc, linedrop
 			mov (sp)+,r1
 			mov (sp)+,r0
 			rts pc	
-waiting:	wait
+waiting:	;wait
 			cmp #1,isinp
 			beq chkinph
 			cmp #1,timeout
@@ -85,8 +84,8 @@ contmsg:	mov #outmsg, -(sp)		;print the open message
 			jsr pc, rstBoard		;reset Board
 			dec startgm				;will change the flag of the game is on - to off 
 			clr indxarr				;initialize the input array 
+			jmp prdollar			;go to print dollar for next move
 			
-			jmp prdollar			;go to print dollar for next move 
 ;---------------------------------------------------------------------------------------------
 ;|                                 checking if the input is legal                            |
 ;---------------------------------------------------------------------------------------------	
@@ -186,20 +185,21 @@ check4:		tst (sp)+			;check if the command is time
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  error   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			
 error:	    tst (sp)+
-			mov #errormsg,-(sp)	;print the error message
-			mov #22,-(sp);length of message
+			jsr pc, linedrop		;prints enter
+			mov #errormsg,-(sp)		;print the error message
+			mov #20,-(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp
-			mov #array,-(sp)	;print the wrong input
-			mov LENARRAY,-(sp)	;length of message
+			mov #array,-(sp)		;print the wrong input
+			mov LENARRAY,-(sp)		;length of message
 			jsr pc, printMsg
 			add #4,sp
-			mov #parnmsg,-(sp) 	;print " to close
+			mov #parnmsg,-(sp) 		;print " to close
 			mov #1,-(sp)
 			jsr pc, printMsg
-			add #4,sp			;pop the stack
-			;bis #1, @#tks		;turn on the option to write an input
-			jmp prdollar		;print dollar and waiting for entering an input
+			add #4,sp				;pop the stack
+			;bis #1, @#tks			;turn on the option to write an input
+			jmp prdollar			;print dollar and waiting for entering an input
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ checking if the input's start is valid ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -564,7 +564,7 @@ contprt:	mov #timemsg, -(sp)		;print "move took"
 			add #4,sp 				;pop the values 
 			
 			mov #secmsg, -(sp)		;print "seconds"
-			mov #15, -(sp)		
+			mov #11, -(sp)		
 			jsr pc, printMsg
 			add #4,sp
 
@@ -726,7 +726,6 @@ contwin:	mov (sp)+,r4 			;return r4 its original value
 			add #4,sp				;pop to the message and to the length
 			
 			jsr pc, linedrop
-			mov #1,timeout
 			dec startgm				;will turn off the game is on flag
 			cmp #1,iscom
 			jmp prdollar			;will go back to dollar to get the next input 
@@ -765,7 +764,7 @@ start:		bic #101,@#tks
 			mov #100, @#tps			;print start message
 			
 			mov #startmsg, -(sp)
-			mov #27, -(sp)
+			mov #25, -(sp)
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -796,10 +795,11 @@ start:		bic #101,@#tks
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)	;print "seconds per move"
-			mov #23, -(sp)			;length of message
+			mov #21, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			jsr pc, linedrop		;prints enter 
 			jsr pc, linedrop		;prints enter 
 			
 			mov #blackmsg, -(sp)	;prints "Black"
@@ -827,7 +827,7 @@ start:		bic #101,@#tks
 			add #4,sp				;pop to the message and to the length
 			
 			mov #scopnmsg, -(sp)
-			mov #23, -(sp)			;length of message
+			mov #21, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
@@ -867,12 +867,16 @@ changeB:	movb #'B, @pointer2
 			br chngbord
 fixplace:	add #2, counter4		;continue to next legal square to update (we are in enter)
 			br chngbord			
-endchang:	
+endchang:	jsr pc,linedrop			;prints enter
+			jsr pc,linedrop
+			jsr pc,linedrop
 			mov #boardlay, -(sp)
-			mov #25, -(sp)			;length of message
+			mov #15, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			
+			jsr pc,linedrop
+			jsr pc,linedrop
 			mov #wordbord, -(sp)
 			mov #120, -(sp)			;length of message
 			jsr pc, printMsg
@@ -899,9 +903,7 @@ busy_w7:	tstb @#tps
 			mov type1, -(sp)		;type2 holds the address of the ascii array to print (Human or Computer)
 			jsr pc, printwho
 			add #2,sp				;pop to the message (type)
- 
-;בדיקה אם זה מחשב או אנושי
-				
+ 			
 			cmp type1,#humanmsg
 			beq humanwh
 			
@@ -944,7 +946,6 @@ dest5:		.word 0
 			jmp chngbord	
  
 humanwh:	bis #100,cls
-			;inc Player
 			clr indxarr
 			jmp prdollar
 			
@@ -965,38 +966,49 @@ blacktrn:	;Print message before turn
 			jsr pc, printwho		;go to print Computer or Human 
 			add #2,sp				;pop to the message and to the length
 
-	
-;	        cmp type2,#humanmsg
-;			beq humanbl
-;watng2:  	tstb @#tps 
-;			bpl watng2			
-;			jsr pc,linedrop
-;			jsr pc,linedrop
-;watng3:	tstb @#tps 
-;			bpl watng3
-;			mov #'$,tpb
-;watng4:	tstb @#tps 
-;			bpl watng4
-;בידקה אם מחשב או אנושי
-;			mov #1,iscom
-;			bis #100,@#cls
-;			mov #1,Steps
-;			mov #src,-(sp)
-;;			mov #dest,-(sp)
-;			mov #WP,-(sp)
-;			jsr pc,getMaxWP
-;			tst (sp)+
-;			tst (sp)+
-;			tst (sp)+
-;			mov #1,Player
-;			mov #0,timeout
-;			clr iscom
-;			jmp chngbord
+			cmp type2,#humanmsg
+			beq humanbl
 			
+			bis #101,@#tks
+			mov #1,iscom
+			bis #100,@#cls
+busy_w1:	tstb @#tps 
+			bpl busy_w1			
+			jsr pc,linedrop
+			jsr pc,linedrop
+			mov #dollar, -(sp)		;print dollar for computer 
+			mov #2, -(sp)			;length of message
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
+						
+			
+			mov #1,Steps
+			mov #src,-(sp)
+			mov #dest,-(sp)
+			mov #WP,-(sp)
+			jsr pc,getMaxWP
+			tst (sp)+
+			tst (sp)+
+			tst (sp)+
+			mov #1,Player
+			mov #0,timeout
+			cmp #0,startgm
+			bne temp3
+			jmp prdollar
+temp3:		mov src,src6
+			mov dest,dest6
+			mov #Board, -(sp)
+			jsr r5,movPiece		;source and destination are moved inline 
+src6:		.word 0
+dest6:		.word 0	
+			tst (sp)+
+			clr iscom
+			clr counter3
+			clr counter4
+			jmp chngbord			
 			
 						
 humanbl:	bis #100,@#cls
-			;dec Player
 			clr indxarr
 			jmp prdollar					
 ;---------------------------------------------------------------------------------------------
@@ -1142,27 +1154,23 @@ fin:		clr busy 				;will turn off the flag -
 			rti
 
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ interrupt of the keyboard ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-inp: 		mov r0, -(sp)
-			;cmp #1,isprint
-			;beq endinp  
+inp: 		mov r0, -(sp) 
 			mov #array, r0 
 			add indxarr, r0			;r0 will hold the address of the next available char 
 			jsr pc, busy_w
-			movb @#tkb, @#tpb 		;send input to the printer
 			movb @#tkb, (r0)
 			cmp @#tkb,#'\b
 			beq backspce
 			cmp @#tkb,#'\r
 			beq enter1
+			movb @#tkb, @#tpb 		;send input to the printer
 			inc indxarr
-			inc indxarr
-			bis #1, @#tks			;restore RE bit
+			inc indxarr	
 endinp:		mov (sp)+,r0
-			bis #1, @#tks
+			bis #1, @#tks			;restore RE bit
 			rti
 			
-enter1: 	;mov #1,isprint
-			bic #101,@#tks
+enter1: 	bic #101,@#tks
 			jsr pc, busy_w
 			movb #'\r ,@#tpb
 			jsr pc, busy_w
@@ -1174,7 +1182,6 @@ enter1: 	;mov #1,isprint
 			mov indxarr,LENARRAY
 			mov #0, indxarr
 			mov (sp)+, r0
-			;add #2, (sp)
 			mov #1,isinp
 			cmp #1,iscom
 			bne endenter 
@@ -1183,6 +1190,7 @@ endenter:	rti
 			
 backspce:	tst indxarr
 			beq endinp
+			movb @#tkb, @#tpb 		;send input to the printer
 			jsr pc, busy_w
 			movb #' ,@#tpb 
 			jsr pc, busy_w
@@ -1209,14 +1217,14 @@ resett:		clr countrst
 			rti
 endturn1:   bic #100,@#cls
 			mov #1,timeout
-			;add #6,(sp)
+			clr countsec
 			rti
 fintimB:	cmp timeB,countsec
 			beq endturn2
 			rti 	
 endturn2:	bic #100,@#cls
 			mov #1,timeout
-			;add #6,(sp)
+			clr countsec
 			rti
 			
 ;---------------------------------------------------------------------------------------------
@@ -1313,15 +1321,14 @@ nowinsit:	tst (sp)+			;pop the stack
 			mov (sp),-(sp)		;save the wp twice like in the recursion
 			jsr pc,checkmov		;get in to the recursion and looking for a right move
 			mov (sp)+,@12(sp)	;move the final wp from the recursion to its address
-			cmp #1,timeout
-			beq donerec			;llllllllllllllllllllllllllllllllll
-		;	add #10,sp
+			cmp #1,timeout		;check if time is over
+			beq donerec			;if timeout is 1 the turn is over and we don't want to get to the recursion
 			tst (sp)+
 			tst (sp)+
 			tst (sp)+
 			tst (sp)+
-		    add #2,Steps
-			br getMaxWP				;check if time is over hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh					
+		    add #2,Steps		;increase the Steps
+			br getMaxWP			;go to the recursion						
 donerec:	
 			tst (sp)+			;pop the stack
 			tst (sp)+			;pop the stack
@@ -1358,8 +1365,6 @@ endtoken:	mov (sp)+ ,r3 		;will return r3 its original value
 			mov r0,4(sp)		;will keep the return value (index) in stack
 			mov 2(sp),r0 		;will return r0 its original value
 			mov (sp)+,(sp)		;will pop r0, and move return address value in the top of stack
-			
-			;inc/dec Playerhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
 			rts pc
 	
 			
@@ -2172,14 +2177,14 @@ endNumMoves:clr r0
 
 calcW: 
 			cmp (r3),#1 		;search for white token
-			bne cont1 			;pass on increasing number of white tokens
+			bne .+4 			;pass on increasing number of white tokens
 			inc r1 				;increase in 1 the number of white tokens if equal
-cont1:		add #2, r3
+			add #2, r3
 			inc r0 				;will count the number of squares we passed
 			cmp r0, #100 		;reached to the end of board
-			beq endCal1 		;end function
+			beq .+4		 		;end function
 			br calcW 			;continue to next square		
-endCal1: 	rts pc 				;return after calculate the number of white token on board 
+			rts pc 				;return after calculate the number of white token on board 
 
 ;---------------------------------------------------------------------------------------------
 ;|                                 	  		calcB                                             |
@@ -2191,15 +2196,14 @@ endCal1: 	rts pc 				;return after calculate the number of white token on board
 
 calcB:
 			cmp (r3),#2 		;search for black token
-			bne cont2 			;pass on increasing number of black tokens
+			bne .+4 			;pass on increasing number of black tokens
 			inc r2 				;increase in 1 the number of black tokens if equal
-cont2:		add #2, r3
+			add #2, r3
 			inc r0 				;will count the number of squares we passed
 			cmp r0, #100 		;reached to the end of board
-			beq endCal2			;end function
+			beq .+4				;end function
 			br calcB			;continue to next square
-endCal2: 	rts pc 				;return after calculate
-	
+			rts pc 				;return after calculate
 	
 ;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Board ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2236,7 +2240,7 @@ opnmsg: 	.ascii<hello, welcome to chental checkers game!>
 dollar:  	.ascii<$ >
 			.even
 			
-startmsg:	.ascii<\r\nStarting a new game\r\n\r\n>
+startmsg:	.ascii<Starting a new game\r\n\r\n>
 			.even
 			
 whitemsg:	.ascii<White >
@@ -2260,13 +2264,13 @@ Curntmsg:	.ascii<Current Player: >
 withmsg:	.ascii<with >
 			.even
 			
-scopnmsg:	.ascii< seconds per move\r\n\r\n>
+scopnmsg:	.ascii< seconds per move>
 			.even
 			
-boardlay:	.ascii<\r\nBoard layout:\r\n\r\n>
+boardlay:	.ascii<Board layout:>
 			.even
 			
-errormsg:	.ascii<\r\nCannot execute ">	
+errormsg:	.ascii<Cannot execute ">	
 			.even
 			
 timemsg:	.ascii<move took >	
@@ -2326,7 +2330,6 @@ countrst:	.word 0
 countsec:	.word 0
 Steps:      .word 0
 countoct:   .word 0
-isprint:    .word 0
 timeout:	.word 0
 WP:			.word 0
 timeprnt:	.word 0
@@ -2334,5 +2337,5 @@ isinp:		.word 0
 iscom:		.word 0
 
 . = torg + 20000	
-rate: .word 1000.
+rate: .word 50.
 
