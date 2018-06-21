@@ -25,8 +25,11 @@ main: 		mov #main, sp
 			mov #clock, @#100		;initialize clock vector
 			mov #300, @#102
 			
-prdollar:  	mov #dollar, -(sp)
-			mov #6, -(sp)			;length of message
+
+prdollar:  	jsr pc, linedrop
+			jsr pc, linedrop
+			mov #dollar, -(sp)
+			mov #2, -(sp)			;length of message
 			jsr pc, printMsg
 			add #4,sp				;pop to the message and to the length
 			clr indxarr
@@ -53,7 +56,7 @@ endtimem:	clr timeout
 			jsr pc, linedrop
 			
 			cmp #1,Player
-			beq prBlack
+			bne prBlack
 
 			mov #whitemsg, -(sp)	;print "White"
 			mov #6, -(sp)		
@@ -587,7 +590,7 @@ time:		bic #101,@#tks
 			add #4,sp				;pop to the message and to the length
 			
 			cmp Player, #2			;check who is the player for knowing the time
-			bne blcktime			;if it is the black player 
+			beq blcktime			;if it is the black player 
 			
 			clr timeprnt			;will hold the time that left
 			clr num1				;will hold the reminder of the time that left 
@@ -628,7 +631,7 @@ stop:		bic #100,cls			;turn off the clock before finish the current game
 			add #4,sp				;pop to the message and to the length
 			
 			cmp Player,#2
-			bne blakstop
+			beq blakstop
 			
 			;if white player 
 			mov #whitemsg, -(sp)	;print "White"
@@ -637,7 +640,7 @@ stop:		bic #100,cls			;turn off the clock before finish the current game
 			add #4,sp				;pop to the message and to the length
 			
 			mov r4, -(sp)			;calcWP is using r4 in its calculate, keep the original value
-			mov #Board,-(sp)
+			mov #Board,-(sp)		
 			mov #1,-(sp)
 			jsr pc,calcWP
 			add #4,sp				;pop Board address and current player 
@@ -663,10 +666,19 @@ contstop:	mov #WPconmsg, -(sp)	;print "player is "
 			cmp r4,#0
 			beq itstie
 			
+			mov r4,-(sp)
+			
 			cmp r4,#0
 			bgt printWP
 			
-printWP:	mov r4, -(sp)
+			neg (sp) 
+			mov #'-,numbrmsg
+			mov #numbrmsg,-(sp)
+			mov #1,-(sp)
+			jsr pc, printMsg
+			add #4 ,sp 
+			
+printWP:	;mov r4, -(sp)			;for the function turndec
 			;halt
 			jsr pc,turndec			;print the value of r4 
 			tst (sp)+			
@@ -679,7 +691,7 @@ printWP:	mov r4, -(sp)
 			bgt curwins
 			
 			cmp Player,#1
-			bne curisB1
+			beq curisB1
 			
 			mov #whitemsg, -(sp)	;print "White"
 			mov #6, -(sp)
@@ -746,6 +758,8 @@ start:		bic #101,@#tks
 			mov #1, Player			;White player is first
 			clr countrst
 			clr countsec
+			clr counter3
+			clr counter4
 			clr indxarr
 			jsr pc, rstBoard		;reset the board 
 			mov #100, @#tps			;print start message
@@ -891,8 +905,6 @@ busy_w7:	tstb @#tps
 			cmp type1,#humanmsg
 			beq humanwh
 			
-
-			
 			bis #101,@#tks
 			mov #1,iscom
 			bis #100,@#cls
@@ -900,11 +912,10 @@ busy_w9:	tstb @#tps
 			bpl busy_w9			
 			jsr pc,linedrop
 			jsr pc,linedrop
-busy_w6:	tstb @#tps 
-			bpl busy_w6
-			mov #'$,tpb
-busy_w8:	tstb @#tps 
-			bpl busy_w8
+			mov #dollar, -(sp)		;print dollar for computer 
+			mov #2, -(sp)			;length of message
+			jsr pc, printMsg
+			add #4,sp				;pop to the message and to the length
 						
 			
 			mov #1,Steps
@@ -920,16 +931,17 @@ busy_w8:	tstb @#tps
 			cmp #0,startgm
 			bne temp4
 			jmp prdollar
-temp4:		;mov src,src5
-			;mov dest,dest5
-			;mov #Board, -(sp)
-			;jsr r5,movPiece		;source and destination are moved inline 
-;src5:		.word 0
-;dest5:		.word 0	
-			;tst (sp)+
+temp4:		mov src,src5
+			mov dest,dest5
+			mov #Board, -(sp)
+			jsr r5,movPiece		;source and destination are moved inline 
+src5:		.word 0
+dest5:		.word 0	
+			tst (sp)+
 			clr iscom
-			jmp chngbord
-			
+			clr counter3
+			clr counter4
+			jmp chngbord	
  
 humanwh:	bis #100,cls
 			;inc Player
@@ -1080,7 +1092,7 @@ turndec:	mov r2, -(sp)		;keep r2 value
 			mov r3,-(sp)		;keep r3 value 
 			clr countoct 		
 			clr r3
-			mov (sp),r2			;move r2 value 
+			mov 6(sp),r2		;move r2 value 
 looppr:		mov r2,r3
 			clr r2 
 			div #12,r2
@@ -1169,7 +1181,9 @@ enter1: 	;mov #1,isprint
 temp:		jsr pc,checkinp
 endenter:	rti
 			
-backspce:	jsr pc, busy_w
+backspce:	tst indxarr
+			beq endinp
+			jsr pc, busy_w
 			movb #' ,@#tpb 
 			jsr pc, busy_w
 			movb #'\b, @#tpb
@@ -2219,7 +2233,7 @@ wordbord:	.ascii<_W_B_B_B\r\nB_B_B_B_\r\n_B_B_B_B\r\n________\r\n________\r\nW_W
 opnmsg: 	.ascii<hello, welcome to chental checkers game!>	
 			.even
 			
-dollar:  	.ascii<\r\n\r\n$ >
+dollar:  	.ascii<$ >
 			.even
 			
 startmsg:	.ascii<\r\nStarting a new game\r\n\r\n>
@@ -2320,5 +2334,5 @@ isinp:		.word 0
 iscom:		.word 0
 
 . = torg + 20000	
-rate: .word 50.
+rate: .word 1000.
 
